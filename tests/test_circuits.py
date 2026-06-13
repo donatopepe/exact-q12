@@ -9,6 +9,11 @@ def run_program(source: str):
     return state.amplitudes
 
 
+def run_state(source: str):
+    state, _ = execute(parse_text(source))
+    return state
+
+
 def phase_program(gate: str, count: int):
     return "\n".join(["RESET 1", "X q0", *([f"{gate} q0"] * count), "DUMP"])
 
@@ -59,3 +64,20 @@ PROB
 """))
     assert output[0].startswith("|0> = ")
     assert output[2].startswith("P(|0>) = ")
+
+
+def test_entangled_circuit_probabilities_sum_to_one() -> None:
+    state = run_state("""
+RESET 3
+H q0
+H q1
+T q0
+P30 q1
+CNOT q0 q2
+SWAP q1 q2
+PROB
+""")
+    total = Q12.zero()
+    for probability in state.probabilities():
+        total += probability
+    assert total == Q12.one()

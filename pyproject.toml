@@ -11,6 +11,9 @@ requires-python = ">=3.11"
 license = "MIT"
 dependencies = []
 
+[project.optional-dependencies]
+dev = ["pytest>=9.0"]
+
 [project.scripts]
 exactq12 = "exactq12.cli:main"
 

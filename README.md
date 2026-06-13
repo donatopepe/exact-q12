@@ -91,15 +91,15 @@ Implementato:
 - Gate: `X`, `Z`, `H`, `S`, `T`, `P30`, `P60`, `CNOT`, `SWAP`.
 - Parser minimale per file `.q12`.
 - CLI `exactq12 run`.
+- CLI `exactq12 bench` con output JSON e log JSONL.
 - Esempi `.q12`.
-- Test pytest per aritmetica, numeri complessi, gate e circuiti obbligatori.
+- Test pytest per aritmetica, numeri complessi, gate, parser, CLI, benchmark e circuiti obbligatori.
 
 Non implementato in questa fase:
 
 - Backend FPGA.
 - Export binario.
 - REPL completa.
-- Benchmark CLI.
 - Rotazioni arbitrarie.
 
 ### Teoria numerica
@@ -293,6 +293,12 @@ Installa `pytest` se non è già disponibile:
 python3 -m pip install pytest
 ```
 
+Oppure installa le dipendenze di sviluppo dichiarate dal progetto:
+
+```bash
+python3 -m pip install -e '.[dev]'
+```
+
 Esegui i test:
 
 ```bash
@@ -371,6 +377,7 @@ La suite pytest copre:
 - Parser `.q12`, commenti, maiuscole/minuscole e errori.
 - CLI `run` con log JSONL.
 - CLI `bench` e serializzazione JSON del risultato.
+- Conservazione esatta della normalizzazione dopo sequenze di gate supportati.
 
 Quando si aggiunge un gate, il minimo richiesto è aggiungere un test di aritmetica della fase, un test sullo statevector e un test circuito end-to-end.
 
@@ -509,6 +516,7 @@ Fase 1, completata nel modello iniziale:
 - CLI `run`.
 - CLI `bench` con output JSON e log JSONL.
 - Test matematici obbligatori.
+- CI GitHub Actions su Python 3.11, 3.12 e 3.13.
 
 Fase 2, futura:
 
@@ -539,6 +547,19 @@ Fase 6, futura:
 - Ogni operazione `Q12` deve ridurre il denominatore quando possibile.
 - Il modello Python deve rimanere la fonte di verità prima di qualsiasi backend hardware.
 - Il README deve essere aggiornato quando cambiano CLI, teoria, formati, esempi o roadmap.
+
+### Workflow di manutenzione
+
+Prima di ogni push eseguire:
+
+```bash
+python3 -m compileall exactq12 tests
+python3 -m pytest
+python3 -m exactq12.cli run examples/bell.q12
+python3 -m exactq12.cli bench --qubits 2 --gates 10 --repetitions 2
+```
+
+La CI GitHub Actions esegue gli stessi controlli principali su più versioni Python. Se una modifica cambia CLI, formato `.q12`, benchmark, log o teoria, aggiornare questo README nello stesso commit.
 
 ### Possibili estensioni per inferenza IA
 
@@ -651,15 +672,15 @@ Implemented:
 - Gates: `X`, `Z`, `H`, `S`, `T`, `P30`, `P60`, `CNOT`, `SWAP`.
 - Minimal `.q12` parser.
 - `exactq12 run` CLI command.
+- `exactq12 bench` CLI command with JSON output and JSONL logs.
 - `.q12` examples.
-- Pytest tests for arithmetic, complex numbers, gates, and required circuits.
+- Pytest tests for arithmetic, complex numbers, gates, parser, CLI, benchmark, and required circuits.
 
 Not implemented in this phase:
 
 - FPGA backend.
 - Binary export.
 - Full REPL.
-- CLI benchmark.
 - Arbitrary rotations.
 
 ### Numerical Theory
@@ -853,6 +874,12 @@ Install `pytest` if needed:
 python3 -m pip install pytest
 ```
 
+Or install the project development dependencies:
+
+```bash
+python3 -m pip install -e '.[dev]'
+```
+
 Run the test suite:
 
 ```bash
@@ -931,6 +958,7 @@ The pytest suite covers:
 - `.q12` parser, comments, case-insensitive opcodes, and errors.
 - `run` CLI with JSONL logging.
 - `bench` CLI and JSON result serialization.
+- Exact normalization preservation after supported gate sequences.
 
 When a gate is added, the minimum expected coverage is an arithmetic test for its phase, a statevector test, and an end-to-end circuit test.
 
@@ -1069,6 +1097,7 @@ Phase 1, completed in the initial model:
 - `run` CLI.
 - `bench` CLI with JSON output and JSONL logs.
 - Required mathematical tests.
+- GitHub Actions CI on Python 3.11, 3.12, and 3.13.
 
 Phase 2, future:
 
@@ -1099,6 +1128,19 @@ Phase 6, future:
 - Every `Q12` operation must reduce the denominator when possible.
 - The Python model remains the source of truth before any hardware backend.
 - This README must be updated whenever CLI behavior, theory, formats, examples, or roadmap change.
+
+### Maintenance Workflow
+
+Before each push, run:
+
+```bash
+python3 -m compileall exactq12 tests
+python3 -m pytest
+python3 -m exactq12.cli run examples/bell.q12
+python3 -m exactq12.cli bench --qubits 2 --gates 10 --repetitions 2
+```
+
+GitHub Actions CI runs the main checks on multiple Python versions. If a change affects the CLI, `.q12` format, benchmark, logs, or theory, update this README in the same commit.
 
 ### Possible AI Inference Extensions
 
