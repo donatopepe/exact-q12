@@ -1,8 +1,9 @@
 from pathlib import Path
 import re
 
-from exactq12.binary import OPCODES
+from exactq12.binary import OPCODES, encode_instructions
 from exactq12.complex_q12 import CQ12
+from exactq12.parser import parse_text
 from exactq12.q12 import Q12
 
 
@@ -110,3 +111,46 @@ def test_rtl_den_reduce_file_contains_expected_logic() -> None:
     assert "a_out = a_in / 12;" in reducer
     assert "e_out = e_in - 1'b1;" in reducer
     assert "all_zero" in reducer
+
+
+def test_rtl_bell_memh_matches_python_binary_export() -> None:
+    instructions = parse_text("""
+RESET 2
+H q0
+CNOT q0 q1
+DUMP
+PROB
+""")
+    payload = encode_instructions(instructions)
+    expected_lines = [payload[index : index + 3].hex() for index in range(0, len(payload), 3)]
+    memh_lines = (ROOT / "rtl" / "bell.memh").read_text(encoding="utf-8").splitlines()
+    assert memh_lines == expected_lines
+
+
+def test_rtl_program_rom_and_statevector_memory_interfaces() -> None:
+    program_rom = (ROOT / "rtl" / "program_rom.sv").read_text(encoding="utf-8")
+    statevector_mem = (ROOT / "rtl" / "statevector_mem.sv").read_text(encoding="utf-8")
+
+    assert "module program_rom" in program_rom
+    assert "parameter string INIT_FILE" in program_rom
+    assert "$readmemh(INIT_FILE, rom);" in program_rom
+    assert "output logic [23:0]" in program_rom
+
+    assert "module statevector_mem" in statevector_mem
+    assert "parameter int AMP_W = (8 * COEFF_W) + (2 * EXP_W)" in statevector_mem
+    assert "always_ff @(posedge clk)" in statevector_mem
+    assert "mem[addr] <= wdata;" in statevector_mem
+
+
+def test_rtl_sequencer_decodes_and_halts_on_dump_or_invalid() -> None:
+    sequencer = (ROOT / "rtl" / "exactq12_sequencer.sv").read_text(encoding="utf-8")
+
+    assert "module exactq12_sequencer" in sequencer
+    assert "instruction_decoder decoder" in sequencer
+    assert "ST_IDLE" in sequencer
+    assert "ST_FETCH" in sequencer
+    assert "ST_DECODE" in sequencer
+    assert "ST_HALT" in sequencer
+    assert "if (!decoder_valid)" in sequencer
+    assert "opcode == OP_DUMP" in sequencer
+    assert "pc <= pc + 1'b1;" in sequencer

@@ -94,13 +94,14 @@ Implementato:
 - CLI `exactq12 bench` con output JSON e log JSONL.
 - CLI `exactq12 repl`, `dump`, `export` e `fpga run` simulato.
 - Primi moduli SystemVerilog combinatori in `rtl/`.
+- Prime memorie RTL e sequencer fetch/decode/halt in `rtl/`.
 - Esempi `.q12`.
 - Test pytest per aritmetica, numeri complessi, gate, parser, CLI, benchmark e circuiti obbligatori.
 
 Non implementato in questa fase:
 
 - Backend FPGA reale.
-- Sequencer RTL, memoria statevector, UART e vincoli Tang Nano 20K.
+- Esecuzione gate RTL completa su memoria statevector, UART e vincoli Tang Nano 20K.
 - Rotazioni arbitrarie.
 
 ### Teoria numerica
@@ -434,17 +435,20 @@ La Fase 5 è iniziata con i primi blocchi combinatori in `rtl/`:
 - `rtl/q12_den_reduce.sv`: riduzione di un passo del denominatore in base 12.
 - `rtl/exactq12_pkg.sv`: costanti opcode allineate all'encoder binario Python.
 - `rtl/instruction_decoder.sv`: decoder combinatorio per istruzioni `[opcode][arg0][arg1]`.
+- `rtl/program_rom.sv`: ROM generica per istruzioni a 24 bit caricata con `$readmemh`.
+- `rtl/statevector_mem.sv`: memoria sincrona per ampiezze `CQ12` impacchettate.
+- `rtl/exactq12_sequencer.sv`: scheletro fetch/decode/halt.
+- `rtl/bell.memh`: programma Bell in formato ROM hex.
 
 Questi moduli sono volutamente piccoli e verificabili. Non implementano ancora:
 
 - integrazione della riduzione del denominatore nel datapath completo;
-- memoria statevector;
-- sequencer istruzioni;
+- esecuzione dei gate sul datapath statevector;
 - UART;
 - top-level Gowin/Tang Nano 20K;
 - file constraint o progetto EDA.
 
-La verifica attuale è fatta con test Python che confrontano formule, opcode e riduzione attesa contro il modello Python esatto. Questo non sostituisce una simulazione SystemVerilog con Verilator/Icarus/Gowin, ma impedisce divergenze immediate tra specifica e RTL iniziale.
+Il sequencer RTL attuale decodifica istruzioni e si ferma su `DUMP` o opcode non valido; non applica ancora gate alla memoria statevector. La verifica attuale è fatta con test Python che confrontano formule, opcode, ROM e riduzione attesa contro il modello Python esatto. Questo non sostituisce una simulazione SystemVerilog con Verilator/Icarus/Gowin, ma impedisce divergenze immediate tra specifica e RTL iniziale.
 
 ### Batteria di test
 
@@ -461,7 +465,7 @@ La suite pytest copre:
 - CLI `bench` e serializzazione JSON del risultato.
 - CLI `repl`, `dump`, `export` e `fpga run` simulato.
 - Roundtrip del formato binario e validazione degli opcode.
-- Formule RTL `q12_mul`, `q12_complex_mul`, opcode, decoder e riduzione denominatore confrontati con il modello Python.
+- Formule RTL `q12_mul`, `q12_complex_mul`, opcode, decoder, ROM, memoria e riduzione denominatore confrontati con il modello Python.
 - Conservazione esatta della normalizzazione dopo sequenze di gate supportati.
 
 Quando si aggiunge un gate, il minimo richiesto è aggiungere un test di aritmetica della fase, un test sullo statevector e un test circuito end-to-end.
@@ -592,11 +596,15 @@ exact-q12/
 │   └── test_q12.py
 ├── rtl/
 │   ├── README.md
+│   ├── bell.memh
+│   ├── exactq12_sequencer.sv
 │   ├── exactq12_pkg.sv
 │   ├── instruction_decoder.sv
+│   ├── program_rom.sv
 │   ├── q12_complex_mul.sv
 │   ├── q12_den_reduce.sv
-│   └── q12_mul.sv
+│   ├── q12_mul.sv
+│   └── statevector_mem.sv
 ├── PROJECT_CONTEXT_EXACT_Q12.md
 ├── pyproject.toml
 ├── README.md
@@ -631,7 +639,8 @@ Fase 4, iniziata:
 Fase 5, iniziata:
 
 - Moduli SystemVerilog combinatori `q12_mul`, `q12_complex_mul`, `q12_den_reduce` e decoder istruzioni.
-- Futuro: statevector register file, sequencer, UART debug, top-level Tang Nano 20K.
+- Memorie RTL iniziali e sequencer fetch/decode/halt.
+- Futuro: esecuzione gate sul datapath statevector, UART debug, top-level Tang Nano 20K.
 
 Fase 6, futura:
 
@@ -777,13 +786,14 @@ Implemented:
 - `exactq12 bench` CLI command with JSON output and JSONL logs.
 - `exactq12 repl`, `dump`, `export`, and simulated `fpga run` CLI commands.
 - First combinational SystemVerilog modules in `rtl/`.
+- First RTL memories and fetch/decode/halt sequencer in `rtl/`.
 - `.q12` examples.
 - Pytest tests for arithmetic, complex numbers, gates, parser, CLI, benchmark, and required circuits.
 
 Not implemented in this phase:
 
 - Real FPGA backend.
-- RTL sequencer, statevector memory, UART, and Tang Nano 20K constraints.
+- Complete RTL gate execution over statevector memory, UART, and Tang Nano 20K constraints.
 - Arbitrary rotations.
 
 ### Numerical Theory
@@ -1117,17 +1127,19 @@ Phase 5 has started with the first combinational blocks in `rtl/`:
 - `rtl/q12_den_reduce.sv`: one-step denominator reduction by base 12.
 - `rtl/exactq12_pkg.sv`: opcode constants aligned with the Python binary encoder.
 - `rtl/instruction_decoder.sv`: combinational decoder for `[opcode][arg0][arg1]` instructions.
+- `rtl/program_rom.sv`: generic 24-bit instruction ROM loaded with `$readmemh`.
+- `rtl/statevector_mem.sv`: synchronous memory for packed `CQ12` amplitudes.
+- `rtl/exactq12_sequencer.sv`: fetch/decode/halt skeleton.
+- `rtl/bell.memh`: Bell program in ROM hex format.
 
 These modules are intentionally small and easy to inspect. They do not yet implement:
 
-- denominator reduction integrated into a complete datapath;
-- statevector memory;
-- instruction sequencing;
+- gate execution over the statevector datapath;
 - UART;
 - Gowin/Tang Nano 20K top-level;
 - constraint files or EDA project files.
 
-Current verification uses Python tests that compare formulas, opcodes, and expected reduction behavior against the exact Python model. This does not replace SystemVerilog simulation with Verilator/Icarus/Gowin, but it prevents immediate divergence between the specification and the initial RTL.
+The current RTL sequencer decodes instructions and halts on `DUMP` or invalid opcodes; it does not yet apply gates to statevector memory. Current verification uses Python tests that compare formulas, opcodes, ROM contents, and expected reduction behavior against the exact Python model. This does not replace SystemVerilog simulation with Verilator/Icarus/Gowin, but it prevents immediate divergence between the specification and the initial RTL.
 
 ### Test Battery
 
@@ -1144,7 +1156,7 @@ The pytest suite covers:
 - `bench` CLI and JSON result serialization.
 - `repl`, `dump`, `export`, and simulated `fpga run` CLI commands.
 - Binary format roundtrip and opcode validation.
-- RTL formulas for `q12_mul`, `q12_complex_mul`, opcodes, decoder, and denominator reduction compared against the Python model.
+- RTL formulas for `q12_mul`, `q12_complex_mul`, opcodes, decoder, ROM, memory, and denominator reduction compared against the Python model.
 - Exact normalization preservation after supported gate sequences.
 
 When a gate is added, the minimum expected coverage is an arithmetic test for its phase, a statevector test, and an end-to-end circuit test.
@@ -1275,11 +1287,15 @@ exact-q12/
 │   └── test_q12.py
 ├── rtl/
 │   ├── README.md
+│   ├── bell.memh
+│   ├── exactq12_sequencer.sv
 │   ├── exactq12_pkg.sv
 │   ├── instruction_decoder.sv
+│   ├── program_rom.sv
 │   ├── q12_complex_mul.sv
 │   ├── q12_den_reduce.sv
-│   └── q12_mul.sv
+│   ├── q12_mul.sv
+│   └── statevector_mem.sv
 ├── PROJECT_CONTEXT_EXACT_Q12.md
 ├── pyproject.toml
 ├── README.md
@@ -1314,7 +1330,8 @@ Phase 4, started:
 Phase 5, started:
 
 - Combinational SystemVerilog modules `q12_mul`, `q12_complex_mul`, `q12_den_reduce`, and instruction decoder.
-- Future: statevector register file, sequencer, UART debug, Tang Nano 20K top-level.
+- Initial RTL memories and fetch/decode/halt sequencer.
+- Future: gate execution over the statevector datapath, UART debug, Tang Nano 20K top-level.
 
 Phase 6, future:
 
