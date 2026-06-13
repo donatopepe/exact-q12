@@ -1,5 +1,7 @@
 from pathlib import Path
+import re
 
+from exactq12.binary import OPCODES
 from exactq12.complex_q12 import CQ12
 from exactq12.q12 import Q12
 
@@ -61,3 +63,50 @@ def test_rtl_files_contain_expected_modules_and_formulas() -> None:
     assert complex_mul.count("q12_mul #(.W(W))") == 4
     assert "out_ar = rr_a - ii_a;" in complex_mul
     assert "out_ai = ri_a + ir_a;" in complex_mul
+
+
+def test_rtl_opcode_package_matches_python_binary_encoder() -> None:
+    package = (ROOT / "rtl" / "exactq12_pkg.sv").read_text(encoding="utf-8")
+    matches = re.findall(r"localparam logic \[7:0\] OP_(\w+)\s+=\s+8'h([0-9a-fA-F]{2});", package)
+    rtl_opcodes = {name: int(value, 16) for name, value in matches}
+    assert rtl_opcodes == OPCODES
+
+
+def test_rtl_instruction_decoder_uses_export_byte_order() -> None:
+    decoder = (ROOT / "rtl" / "instruction_decoder.sv").read_text(encoding="utf-8")
+    assert "opcode = instr[23:16];" in decoder
+    assert "arg0 = instr[15:8];" in decoder
+    assert "arg1 = instr[7:0];" in decoder
+    assert "OP_CNOT" in decoder
+    assert "OP_SWAP" in decoder
+    assert "valid = 1'b0;" in decoder
+
+
+def rtl_den_reduce_once(a: int, b: int, c: int, d: int, E: int) -> tuple[int, int, int, int, int, bool]:
+    if (a, b, c, d) == (0, 0, 0, 0):
+        return 0, 0, 0, 0, 0, E != 0
+    if E != 0 and all(value % 12 == 0 for value in (a, b, c, d)):
+        return a // 12, b // 12, c // 12, d // 12, E - 1, True
+    return a, b, c, d, E, False
+
+
+def test_rtl_den_reduce_one_step_matches_q12_normalization() -> None:
+    cases = [
+        (12, 24, 36, 48, 3),
+        (-24, 0, 12, -36, 2),
+        (1, 12, 24, 36, 2),
+        (0, 0, 0, 0, 5),
+    ]
+
+    for case in cases:
+        a, b, c, d, E, _ = rtl_den_reduce_once(*case)
+        assert Q12(*case) == Q12(a, b, c, d, E)
+
+
+def test_rtl_den_reduce_file_contains_expected_logic() -> None:
+    reducer = (ROOT / "rtl" / "q12_den_reduce.sv").read_text(encoding="utf-8")
+    assert "module q12_den_reduce" in reducer
+    assert "all_divisible_by_12" in reducer
+    assert "a_out = a_in / 12;" in reducer
+    assert "e_out = e_in - 1'b1;" in reducer
+    assert "all_zero" in reducer

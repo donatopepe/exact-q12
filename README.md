@@ -81,7 +81,7 @@ Per supportarle esattamente servirebbe estendere il campo simbolico con ulterior
 
 ### Stato del progetto
 
-Fase attuale: **Fase 4 iniziata, simulazione software del flusso binario**.
+Fase attuale: **Fase 5 iniziata, primi blocchi RTL combinatori aggiunti**.
 
 Implementato:
 
@@ -431,17 +431,20 @@ La Fase 5 è iniziata con i primi blocchi combinatori in `rtl/`:
 
 - `rtl/q12_mul.sv`: moltiplicazione del numeratore `a + b√2 + c√3 + d√6`.
 - `rtl/q12_complex_mul.sv`: moltiplicazione complessa usando quattro istanze di `q12_mul`.
+- `rtl/q12_den_reduce.sv`: riduzione di un passo del denominatore in base 12.
+- `rtl/exactq12_pkg.sv`: costanti opcode allineate all'encoder binario Python.
+- `rtl/instruction_decoder.sv`: decoder combinatorio per istruzioni `[opcode][arg0][arg1]`.
 
 Questi moduli sono volutamente piccoli e verificabili. Non implementano ancora:
 
-- riduzione del denominatore;
+- integrazione della riduzione del denominatore nel datapath completo;
 - memoria statevector;
 - sequencer istruzioni;
 - UART;
 - top-level Gowin/Tang Nano 20K;
 - file constraint o progetto EDA.
 
-La verifica attuale è fatta con test Python che confrontano le formule RTL attese contro il modello Python esatto. Questo non sostituisce una simulazione SystemVerilog con Verilator/Icarus/Gowin, ma impedisce divergenze immediate tra specifica e RTL iniziale.
+La verifica attuale è fatta con test Python che confrontano formule, opcode e riduzione attesa contro il modello Python esatto. Questo non sostituisce una simulazione SystemVerilog con Verilator/Icarus/Gowin, ma impedisce divergenze immediate tra specifica e RTL iniziale.
 
 ### Batteria di test
 
@@ -458,7 +461,7 @@ La suite pytest copre:
 - CLI `bench` e serializzazione JSON del risultato.
 - CLI `repl`, `dump`, `export` e `fpga run` simulato.
 - Roundtrip del formato binario e validazione degli opcode.
-- Formule RTL `q12_mul` e `q12_complex_mul` confrontate con il modello Python.
+- Formule RTL `q12_mul`, `q12_complex_mul`, opcode, decoder e riduzione denominatore confrontati con il modello Python.
 - Conservazione esatta della normalizzazione dopo sequenze di gate supportati.
 
 Quando si aggiunge un gate, il minimo richiesto è aggiungere un test di aritmetica della fase, un test sullo statevector e un test circuito end-to-end.
@@ -589,7 +592,10 @@ exact-q12/
 │   └── test_q12.py
 ├── rtl/
 │   ├── README.md
+│   ├── exactq12_pkg.sv
+│   ├── instruction_decoder.sv
 │   ├── q12_complex_mul.sv
+│   ├── q12_den_reduce.sv
 │   └── q12_mul.sv
 ├── PROJECT_CONTEXT_EXACT_Q12.md
 ├── pyproject.toml
@@ -624,7 +630,7 @@ Fase 4, iniziata:
 
 Fase 5, iniziata:
 
-- Moduli SystemVerilog combinatori `q12_mul` e `q12_complex_mul`.
+- Moduli SystemVerilog combinatori `q12_mul`, `q12_complex_mul`, `q12_den_reduce` e decoder istruzioni.
 - Futuro: statevector register file, sequencer, UART debug, top-level Tang Nano 20K.
 
 Fase 6, futura:
@@ -1108,17 +1114,20 @@ Phase 5 has started with the first combinational blocks in `rtl/`:
 
 - `rtl/q12_mul.sv`: numerator multiplication for `a + b√2 + c√3 + d√6`.
 - `rtl/q12_complex_mul.sv`: complex multiplication using four `q12_mul` instances.
+- `rtl/q12_den_reduce.sv`: one-step denominator reduction by base 12.
+- `rtl/exactq12_pkg.sv`: opcode constants aligned with the Python binary encoder.
+- `rtl/instruction_decoder.sv`: combinational decoder for `[opcode][arg0][arg1]` instructions.
 
 These modules are intentionally small and easy to inspect. They do not yet implement:
 
-- denominator reduction;
+- denominator reduction integrated into a complete datapath;
 - statevector memory;
 - instruction sequencing;
 - UART;
 - Gowin/Tang Nano 20K top-level;
 - constraint files or EDA project files.
 
-Current verification uses Python tests that compare the expected RTL formulas against the exact Python model. This does not replace SystemVerilog simulation with Verilator/Icarus/Gowin, but it prevents immediate divergence between the specification and the initial RTL.
+Current verification uses Python tests that compare formulas, opcodes, and expected reduction behavior against the exact Python model. This does not replace SystemVerilog simulation with Verilator/Icarus/Gowin, but it prevents immediate divergence between the specification and the initial RTL.
 
 ### Test Battery
 
@@ -1135,7 +1144,7 @@ The pytest suite covers:
 - `bench` CLI and JSON result serialization.
 - `repl`, `dump`, `export`, and simulated `fpga run` CLI commands.
 - Binary format roundtrip and opcode validation.
-- RTL formulas for `q12_mul` and `q12_complex_mul` compared against the Python model.
+- RTL formulas for `q12_mul`, `q12_complex_mul`, opcodes, decoder, and denominator reduction compared against the Python model.
 - Exact normalization preservation after supported gate sequences.
 
 When a gate is added, the minimum expected coverage is an arithmetic test for its phase, a statevector test, and an end-to-end circuit test.
@@ -1266,7 +1275,10 @@ exact-q12/
 │   └── test_q12.py
 ├── rtl/
 │   ├── README.md
+│   ├── exactq12_pkg.sv
+│   ├── instruction_decoder.sv
 │   ├── q12_complex_mul.sv
+│   ├── q12_den_reduce.sv
 │   └── q12_mul.sv
 ├── PROJECT_CONTEXT_EXACT_Q12.md
 ├── pyproject.toml
@@ -1301,7 +1313,7 @@ Phase 4, started:
 
 Phase 5, started:
 
-- Combinational SystemVerilog modules `q12_mul` and `q12_complex_mul`.
+- Combinational SystemVerilog modules `q12_mul`, `q12_complex_mul`, `q12_den_reduce`, and instruction decoder.
 - Future: statevector register file, sequencer, UART debug, Tang Nano 20K top-level.
 
 Phase 6, future:
