@@ -4,7 +4,7 @@ import argparse
 import json
 
 from exactq12.benchmark import run_benchmark
-from exactq12.binary import export_binary, run_binary
+from exactq12.binary import export_binary, export_memh, run_binary
 from exactq12.gates import execute
 from exactq12.logging_utils import JsonlLogger
 from exactq12.parser import parse_file
@@ -29,11 +29,16 @@ def dump(path: str) -> int:
 
 
 def export(path: str, output_path: str, export_format: str) -> int:
-    if export_format != "bin":
+    if export_format == "bin":
+        byte_count = export_binary(path, output_path)
+        print(f"wrote {byte_count} bytes to {output_path}")
+        return 0
+    if export_format == "memh":
+        instruction_count = export_memh(path, output_path)
+        print(f"wrote {instruction_count} instructions to {output_path}")
+        return 0
+    else:
         raise ValueError(f"unsupported export format: {export_format}")
-    byte_count = export_binary(path, output_path)
-    print(f"wrote {byte_count} bytes to {output_path}")
-    return 0
 
 
 def fpga_run(path: str) -> int:
@@ -64,7 +69,7 @@ def main(argv: list[str] | None = None) -> int:
 
     export_parser = subparsers.add_parser("export")
     export_parser.add_argument("path")
-    export_parser.add_argument("--format", choices=["bin"], required=True)
+    export_parser.add_argument("--format", choices=["bin", "memh"], required=True)
     export_parser.add_argument("--out", required=True)
 
     fpga_parser = subparsers.add_parser("fpga")

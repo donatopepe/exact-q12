@@ -42,6 +42,11 @@ def encode_instructions(instructions: list[Instruction]) -> bytes:
     return b"".join(encode_instruction(instruction) for instruction in instructions)
 
 
+def encode_memh(instructions: list[Instruction]) -> str:
+    payload = encode_instructions(instructions)
+    return "\n".join(payload[offset : offset + 3].hex() for offset in range(0, len(payload), 3)) + "\n"
+
+
 def decode_instructions(payload: bytes) -> list[Instruction]:
     if len(payload) % 3 != 0:
         raise ValueError("binary payload length must be a multiple of 3")
@@ -72,6 +77,13 @@ def export_binary(source_path: str | Path, output_path: str | Path) -> int:
     payload = encode_instructions(instructions)
     Path(output_path).write_bytes(payload)
     return len(payload)
+
+
+def export_memh(source_path: str | Path, output_path: str | Path) -> int:
+    instructions = parse_file(source_path)
+    text = encode_memh(instructions)
+    Path(output_path).write_text(text, encoding="utf-8")
+    return len(instructions)
 
 
 def run_binary(path: str | Path) -> tuple[Statevector, list[str]]:

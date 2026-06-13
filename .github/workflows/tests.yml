@@ -28,4 +28,5 @@ jobs:
           exactq12 bench --qubits 2 --gates 10 --repetitions 2
           exactq12 dump examples/bell.q12
           exactq12 export examples/bell.q12 --format bin --out bell.bin
+          exactq12 export examples/bell.q12 --format memh --out bell.memh
           exactq12 fpga run bell.bin

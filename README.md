@@ -93,6 +93,8 @@ Implementato:
 - CLI `exactq12 run`.
 - CLI `exactq12 bench` con output JSON e log JSONL.
 - CLI `exactq12 repl`, `dump`, `export` e `fpga run` simulato.
+- Export binario `bin` e ROM hex `memh`.
+- Utility Python di packing RTL per `Q12` e `CQ12`.
 - Primi moduli SystemVerilog combinatori in `rtl/`.
 - Prime memorie RTL e sequencer fetch/decode/halt in `rtl/`.
 - Esempi `.q12`.
@@ -295,6 +297,7 @@ exactq12 repl
 exactq12 bench --qubits 4 --gates 100 --repetitions 5
 exactq12 dump examples/bell.q12
 exactq12 export examples/bell.q12 --format bin --out bell.bin
+exactq12 export examples/bell.q12 --format memh --out bell.memh
 exactq12 fpga run bell.bin
 ```
 
@@ -416,6 +419,7 @@ Export:
 
 ```bash
 exactq12 export examples/bell.q12 --format bin --out bell.bin
+exactq12 export examples/bell.q12 --format memh --out bell.memh
 ```
 
 Simulazione software del flusso binario:
@@ -425,6 +429,16 @@ exactq12 fpga run bell.bin
 ```
 
 Questa simulazione valida encoder, decoder e semantica delle istruzioni prima di qualunque backend hardware reale.
+
+Il formato `memh` scrive una istruzione a 24 bit per riga, compatibile con `rtl/program_rom.sv` e `$readmemh`:
+
+```text
+000200
+030000
+080001
+0a0000
+0b0000
+```
 
 ### RTL SystemVerilog
 
@@ -439,6 +453,7 @@ La Fase 5 è iniziata con i primi blocchi combinatori in `rtl/`:
 - `rtl/statevector_mem.sv`: memoria sincrona per ampiezze `CQ12` impacchettate.
 - `rtl/exactq12_sequencer.sv`: scheletro fetch/decode/halt.
 - `rtl/bell.memh`: programma Bell in formato ROM hex.
+- `exactq12/rtl_pack.py`: packing/unpacking Python di `Q12` e `CQ12` nel layout usato dalla memoria RTL.
 
 Questi moduli sono volutamente piccoli e verificabili. Non implementano ancora:
 
@@ -465,6 +480,7 @@ La suite pytest copre:
 - CLI `bench` e serializzazione JSON del risultato.
 - CLI `repl`, `dump`, `export` e `fpga run` simulato.
 - Roundtrip del formato binario e validazione degli opcode.
+- Export `memh` e roundtrip del packing RTL `Q12`/`CQ12`.
 - Formule RTL `q12_mul`, `q12_complex_mul`, opcode, decoder, ROM, memoria e riduzione denominatore confrontati con il modello Python.
 - Conservazione esatta della normalizzazione dopo sequenze di gate supportati.
 
@@ -578,6 +594,7 @@ exact-q12/
 │   ├── parser.py
 │   ├── q12.py
 │   ├── repl.py
+│   ├── rtl_pack.py
 │   └── statevector.py
 ├── examples/
 │   ├── bell.q12
@@ -593,6 +610,7 @@ exact-q12/
 │   ├── test_gates.py
 │   ├── test_parser_cli_benchmark.py
 │   ├── test_rtl.py
+│   ├── test_rtl_pack.py
 │   └── test_q12.py
 ├── rtl/
 │   ├── README.md
@@ -631,6 +649,7 @@ Fase 2, completata nel modello iniziale:
 Fase 3, completata nel modello iniziale:
 
 - Export binario dei circuiti.
+- Export ROM hex `memh` per `$readmemh`.
 
 Fase 4, iniziata:
 
@@ -665,6 +684,7 @@ python3 -m pytest
 python3 -m exactq12.cli run examples/bell.q12
 python3 -m exactq12.cli bench --qubits 2 --gates 10 --repetitions 2
 python3 -m exactq12.cli export examples/bell.q12 --format bin --out bell.bin
+python3 -m exactq12.cli export examples/bell.q12 --format memh --out bell.memh
 python3 -m exactq12.cli fpga run bell.bin
 ```
 
@@ -785,6 +805,8 @@ Implemented:
 - `exactq12 run` CLI command.
 - `exactq12 bench` CLI command with JSON output and JSONL logs.
 - `exactq12 repl`, `dump`, `export`, and simulated `fpga run` CLI commands.
+- Binary `bin` and ROM hex `memh` export.
+- Python RTL packing utilities for `Q12` and `CQ12`.
 - First combinational SystemVerilog modules in `rtl/`.
 - First RTL memories and fetch/decode/halt sequencer in `rtl/`.
 - `.q12` examples.
@@ -987,6 +1009,7 @@ exactq12 repl
 exactq12 bench --qubits 4 --gates 100 --repetitions 5
 exactq12 dump examples/bell.q12
 exactq12 export examples/bell.q12 --format bin --out bell.bin
+exactq12 export examples/bell.q12 --format memh --out bell.memh
 exactq12 fpga run bell.bin
 ```
 
@@ -1108,6 +1131,7 @@ Export:
 
 ```bash
 exactq12 export examples/bell.q12 --format bin --out bell.bin
+exactq12 export examples/bell.q12 --format memh --out bell.memh
 ```
 
 Software simulation of the binary stream:
@@ -1117,6 +1141,16 @@ exactq12 fpga run bell.bin
 ```
 
 This simulation validates encoder, decoder, and instruction semantics before any real hardware backend.
+
+The `memh` format writes one 24-bit instruction per line, compatible with `rtl/program_rom.sv` and `$readmemh`:
+
+```text
+000200
+030000
+080001
+0a0000
+0b0000
+```
 
 ### SystemVerilog RTL
 
@@ -1131,6 +1165,7 @@ Phase 5 has started with the first combinational blocks in `rtl/`:
 - `rtl/statevector_mem.sv`: synchronous memory for packed `CQ12` amplitudes.
 - `rtl/exactq12_sequencer.sv`: fetch/decode/halt skeleton.
 - `rtl/bell.memh`: Bell program in ROM hex format.
+- `exactq12/rtl_pack.py`: Python packing/unpacking for `Q12` and `CQ12` using the RTL memory layout.
 
 These modules are intentionally small and easy to inspect. They do not yet implement:
 
@@ -1156,6 +1191,7 @@ The pytest suite covers:
 - `bench` CLI and JSON result serialization.
 - `repl`, `dump`, `export`, and simulated `fpga run` CLI commands.
 - Binary format roundtrip and opcode validation.
+- `memh` export and RTL `Q12`/`CQ12` packing roundtrip.
 - RTL formulas for `q12_mul`, `q12_complex_mul`, opcodes, decoder, ROM, memory, and denominator reduction compared against the Python model.
 - Exact normalization preservation after supported gate sequences.
 
@@ -1269,6 +1305,7 @@ exact-q12/
 │   ├── parser.py
 │   ├── q12.py
 │   ├── repl.py
+│   ├── rtl_pack.py
 │   └── statevector.py
 ├── examples/
 │   ├── bell.q12
@@ -1284,6 +1321,7 @@ exact-q12/
 │   ├── test_gates.py
 │   ├── test_parser_cli_benchmark.py
 │   ├── test_rtl.py
+│   ├── test_rtl_pack.py
 │   └── test_q12.py
 ├── rtl/
 │   ├── README.md
@@ -1322,6 +1360,7 @@ Phase 2, completed in the initial model:
 Phase 3, completed in the initial model:
 
 - Binary circuit export.
+- ROM hex `memh` export for `$readmemh`.
 
 Phase 4, started:
 

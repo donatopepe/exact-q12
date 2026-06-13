@@ -4,7 +4,7 @@ from io import StringIO
 
 import pytest
 
-from exactq12.binary import decode_instructions, encode_instructions, export_binary, run_binary
+from exactq12.binary import decode_instructions, encode_instructions, encode_memh, export_binary, export_memh, run_binary
 from exactq12.complex_q12 import CQ12
 from exactq12.parser import Instruction, parse_text
 from exactq12.q12 import Q12
@@ -47,6 +47,17 @@ def test_export_binary_and_run_binary(tmp_path) -> None:
     assert dump[0].startswith("|00> = ")
 
 
+def test_export_memh_matches_instruction_hex(tmp_path) -> None:
+    source = tmp_path / "bell.q12"
+    output = tmp_path / "bell.memh"
+    source.write_text("RESET 2\nH q0\nCNOT q0 q1\nDUMP\nPROB\n", encoding="utf-8")
+    instructions = parse_text(source.read_text(encoding="utf-8"))
+
+    instruction_count = export_memh(source, output)
+    assert instruction_count == 5
+    assert output.read_text(encoding="utf-8") == encode_memh(instructions)
+
+
 def test_repl_executes_incremental_program() -> None:
     output = StringIO()
     repl(StringIO("RESET 1\nH q0\nDUMP\nQUIT\n"), output)
@@ -84,6 +95,21 @@ def test_cli_export_and_fpga_run(tmp_path) -> None:
     )
     assert "|00>" in run_completed.stdout
     assert "|11>" in run_completed.stdout
+
+
+def test_cli_export_memh(tmp_path) -> None:
+    source = tmp_path / "bell.q12"
+    output = tmp_path / "bell.memh"
+    source.write_text("RESET 2\nH q0\nCNOT q0 q1\nDUMP\n", encoding="utf-8")
+
+    completed = subprocess.run(
+        [sys.executable, "-m", "exactq12.cli", "export", str(source), "--format", "memh", "--out", str(output)],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    assert "wrote 4 instructions" in completed.stdout
+    assert output.read_text(encoding="utf-8").splitlines() == ["000200", "030000", "080001", "0a0000"]
 
 
 def test_cli_dump_prints_final_state_without_dump_instruction(tmp_path) -> None:
