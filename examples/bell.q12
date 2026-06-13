@@ -1,0 +1,7 @@
+RESET 2
+
+H q0
+CNOT q0 q1
+
+DUMP
+PROB

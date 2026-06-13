@@ -1,0 +1,9 @@
+RESET 1
+X q0
+P60 q0
+P60 q0
+P60 q0
+P60 q0
+P60 q0
+P60 q0
+DUMP
