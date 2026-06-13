@@ -4,9 +4,11 @@ import argparse
 import json
 
 from exactq12.benchmark import run_benchmark
+from exactq12.binary import export_binary, run_binary
 from exactq12.gates import execute
 from exactq12.logging_utils import JsonlLogger
 from exactq12.parser import parse_file
+from exactq12.repl import repl
 
 
 def run(path: str, log_path: str | None = None) -> int:
@@ -16,6 +18,28 @@ def run(path: str, log_path: str | None = None) -> int:
     for line in output:
         print(line)
     logger.write("run_end", path=path, output_lines=len(output))
+    return 0
+
+
+def dump(path: str) -> int:
+    state, _ = execute(parse_file(path))
+    for line in state.dump_lines():
+        print(line)
+    return 0
+
+
+def export(path: str, output_path: str, export_format: str) -> int:
+    if export_format != "bin":
+        raise ValueError(f"unsupported export format: {export_format}")
+    byte_count = export_binary(path, output_path)
+    print(f"wrote {byte_count} bytes to {output_path}")
+    return 0
+
+
+def fpga_run(path: str) -> int:
+    _, output = run_binary(path)
+    for line in output:
+        print(line)
     return 0
 
 
@@ -33,6 +57,21 @@ def main(argv: list[str] | None = None) -> int:
     bench_parser.add_argument("--repetitions", type=int, default=1)
     bench_parser.add_argument("--log-jsonl", dest="log_jsonl")
 
+    subparsers.add_parser("repl")
+
+    dump_parser = subparsers.add_parser("dump")
+    dump_parser.add_argument("path")
+
+    export_parser = subparsers.add_parser("export")
+    export_parser.add_argument("path")
+    export_parser.add_argument("--format", choices=["bin"], required=True)
+    export_parser.add_argument("--out", required=True)
+
+    fpga_parser = subparsers.add_parser("fpga")
+    fpga_subparsers = fpga_parser.add_subparsers(dest="fpga_command", required=True)
+    fpga_run_parser = fpga_subparsers.add_parser("run")
+    fpga_run_parser.add_argument("path")
+
     args = parser.parse_args(argv)
     if args.command == "run":
         return run(args.path, args.log_jsonl)
@@ -40,6 +79,14 @@ def main(argv: list[str] | None = None) -> int:
         result = run_benchmark(args.qubits, args.gates, args.repetitions, args.log_jsonl)
         print(json.dumps(result.to_dict(), indent=2, sort_keys=True))
         return 0
+    if args.command == "repl":
+        return repl()
+    if args.command == "dump":
+        return dump(args.path)
+    if args.command == "export":
+        return export(args.path, args.out, args.format)
+    if args.command == "fpga" and args.fpga_command == "run":
+        return fpga_run(args.path)
     parser.error(f"unsupported command: {args.command}")
     return 2
 

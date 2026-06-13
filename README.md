@@ -81,7 +81,7 @@ Per supportarle esattamente servirebbe estendere il campo simbolico con ulterior
 
 ### Stato del progetto
 
-Fase attuale: **Fase 1, modello Python**.
+Fase attuale: **Fase 4 iniziata, simulazione software del flusso binario**.
 
 Implementato:
 
@@ -92,14 +92,13 @@ Implementato:
 - Parser minimale per file `.q12`.
 - CLI `exactq12 run`.
 - CLI `exactq12 bench` con output JSON e log JSONL.
+- CLI `exactq12 repl`, `dump`, `export` e `fpga run` simulato.
 - Esempi `.q12`.
 - Test pytest per aritmetica, numeri complessi, gate, parser, CLI, benchmark e circuiti obbligatori.
 
 Non implementato in questa fase:
 
-- Backend FPGA.
-- Export binario.
-- REPL completa.
+- Backend FPGA reale.
 - Rotazioni arbitrarie.
 
 ### Teoria numerica
@@ -285,6 +284,19 @@ Dopo l'installazione:
 exactq12 run examples/bell.q12
 ```
 
+Comandi principali disponibili:
+
+```bash
+exactq12 run examples/bell.q12
+exactq12 repl
+exactq12 bench --qubits 4 --gates 100 --repetitions 5
+exactq12 dump examples/bell.q12
+exactq12 export examples/bell.q12 --format bin --out bell.bin
+exactq12 fpga run bell.bin
+```
+
+`fpga run` in questa fase è una simulazione software del formato istruzioni binarie. Non esegue codice su hardware reale e non contiene SystemVerilog.
+
 ### Esecuzione dei test
 
 Installa `pytest` se non è già disponibile:
@@ -364,6 +376,53 @@ Eventi principali di `run`:
 
 Questi benchmark non sono confronti assoluti con simulatori floating point. Servono soprattutto per seguire regressioni interne, crescita dei coefficienti, costo dei gate e impatto di future ottimizzazioni.
 
+### Export binario e simulazione FPGA
+
+La Fase 3 introduce un formato binario minimale a istruzioni da 3 byte:
+
+```text
+[opcode][arg0][arg1]
+```
+
+Esempi:
+
+```text
+H q0        = 0x03 0x00 0x00
+CNOT q0 q1  = 0x08 0x00 0x01
+```
+
+Opcode supportati:
+
+| Opcode | Istruzione |
+|---:|---|
+| `0x00` | `RESET` |
+| `0x01` | `X` |
+| `0x02` | `Z` |
+| `0x03` | `H` |
+| `0x04` | `S` |
+| `0x05` | `T` |
+| `0x06` | `P30` |
+| `0x07` | `P60` |
+| `0x08` | `CNOT` |
+| `0x09` | `SWAP` |
+| `0x0A` | `DUMP` |
+| `0x0B` | `PROB` |
+| `0x0C` | `MEASURE` |
+
+Export:
+
+```bash
+exactq12 export examples/bell.q12 --format bin --out bell.bin
+```
+
+Simulazione software del flusso binario:
+
+```bash
+exactq12 fpga run bell.bin
+```
+
+Questa simulazione valida encoder, decoder e semantica delle istruzioni prima di qualunque backend hardware reale.
+
 ### Batteria di test
 
 La suite pytest copre:
@@ -377,6 +436,8 @@ La suite pytest copre:
 - Parser `.q12`, commenti, maiuscole/minuscole e errori.
 - CLI `run` con log JSONL.
 - CLI `bench` e serializzazione JSON del risultato.
+- CLI `repl`, `dump`, `export` e `fpga run` simulato.
+- Roundtrip del formato binario e validazione degli opcode.
 - Conservazione esatta della normalizzazione dopo sequenze di gate supportati.
 
 Quando si aggiunge un gate, il minimo richiesto è aggiungere un test di aritmetica della fase, un test sullo statevector e un test circuito end-to-end.
@@ -481,12 +542,14 @@ exact-q12/
 ├── exactq12/
 │   ├── __init__.py
 │   ├── benchmark.py
+│   ├── binary.py
 │   ├── cli.py
 │   ├── complex_q12.py
 │   ├── gates.py
 │   ├── logging_utils.py
 │   ├── parser.py
 │   ├── q12.py
+│   ├── repl.py
 │   └── statevector.py
 ├── examples/
 │   ├── bell.q12
@@ -497,6 +560,7 @@ exact-q12/
 │   └── t8.q12
 ├── tests/
 │   ├── test_circuits.py
+│   ├── test_binary_repl.py
 │   ├── test_complex_q12.py
 │   ├── test_gates.py
 │   ├── test_parser_cli_benchmark.py
@@ -518,18 +582,19 @@ Fase 1, completata nel modello iniziale:
 - Test matematici obbligatori.
 - CI GitHub Actions su Python 3.11, 3.12 e 3.13.
 
-Fase 2, futura:
+Fase 2, completata nel modello iniziale:
 
 - REPL.
+- Benchmark CLI.
 - Miglioramenti ergonomici della CLI.
 
-Fase 3, futura:
+Fase 3, completata nel modello iniziale:
 
 - Export binario dei circuiti.
 
-Fase 4, futura:
+Fase 4, iniziata:
 
-- Backend FPGA simulato.
+- Simulatore software del flusso binario con `exactq12 fpga run`.
 
 Fase 5, futura:
 
@@ -557,6 +622,8 @@ python3 -m compileall exactq12 tests
 python3 -m pytest
 python3 -m exactq12.cli run examples/bell.q12
 python3 -m exactq12.cli bench --qubits 2 --gates 10 --repetitions 2
+python3 -m exactq12.cli export examples/bell.q12 --format bin --out bell.bin
+python3 -m exactq12.cli fpga run bell.bin
 ```
 
 La CI GitHub Actions esegue gli stessi controlli principali su più versioni Python. Se una modifica cambia CLI, formato `.q12`, benchmark, log o teoria, aggiornare questo README nello stesso commit.
@@ -662,7 +729,7 @@ Exact support for these operations would require extending the symbolic field wi
 
 ### Project Status
 
-Current phase: **Phase 1, Python model**.
+Current phase: **Phase 4 started, software simulation of the binary stream**.
 
 Implemented:
 
@@ -673,14 +740,13 @@ Implemented:
 - Minimal `.q12` parser.
 - `exactq12 run` CLI command.
 - `exactq12 bench` CLI command with JSON output and JSONL logs.
+- `exactq12 repl`, `dump`, `export`, and simulated `fpga run` CLI commands.
 - `.q12` examples.
 - Pytest tests for arithmetic, complex numbers, gates, parser, CLI, benchmark, and required circuits.
 
 Not implemented in this phase:
 
-- FPGA backend.
-- Binary export.
-- Full REPL.
+- Real FPGA backend.
 - Arbitrary rotations.
 
 ### Numerical Theory
@@ -866,6 +932,19 @@ After installation:
 exactq12 run examples/bell.q12
 ```
 
+Main available commands:
+
+```bash
+exactq12 run examples/bell.q12
+exactq12 repl
+exactq12 bench --qubits 4 --gates 100 --repetitions 5
+exactq12 dump examples/bell.q12
+exactq12 export examples/bell.q12 --format bin --out bell.bin
+exactq12 fpga run bell.bin
+```
+
+At this stage, `fpga run` is a software simulation of the binary instruction format. It does not execute on real hardware and does not contain SystemVerilog.
+
 ### Running Tests
 
 Install `pytest` if needed:
@@ -945,6 +1024,53 @@ Main `run` events:
 
 These benchmarks are not absolute comparisons against floating point simulators. They are mainly for tracking internal regressions, coefficient growth, gate cost, and future optimization impact.
 
+### Binary Export and FPGA Simulation
+
+Phase 3 introduces a minimal binary format with 3-byte instructions:
+
+```text
+[opcode][arg0][arg1]
+```
+
+Examples:
+
+```text
+H q0        = 0x03 0x00 0x00
+CNOT q0 q1  = 0x08 0x00 0x01
+```
+
+Supported opcodes:
+
+| Opcode | Instruction |
+|---:|---|
+| `0x00` | `RESET` |
+| `0x01` | `X` |
+| `0x02` | `Z` |
+| `0x03` | `H` |
+| `0x04` | `S` |
+| `0x05` | `T` |
+| `0x06` | `P30` |
+| `0x07` | `P60` |
+| `0x08` | `CNOT` |
+| `0x09` | `SWAP` |
+| `0x0A` | `DUMP` |
+| `0x0B` | `PROB` |
+| `0x0C` | `MEASURE` |
+
+Export:
+
+```bash
+exactq12 export examples/bell.q12 --format bin --out bell.bin
+```
+
+Software simulation of the binary stream:
+
+```bash
+exactq12 fpga run bell.bin
+```
+
+This simulation validates encoder, decoder, and instruction semantics before any real hardware backend.
+
 ### Test Battery
 
 The pytest suite covers:
@@ -958,6 +1084,8 @@ The pytest suite covers:
 - `.q12` parser, comments, case-insensitive opcodes, and errors.
 - `run` CLI with JSONL logging.
 - `bench` CLI and JSON result serialization.
+- `repl`, `dump`, `export`, and simulated `fpga run` CLI commands.
+- Binary format roundtrip and opcode validation.
 - Exact normalization preservation after supported gate sequences.
 
 When a gate is added, the minimum expected coverage is an arithmetic test for its phase, a statevector test, and an end-to-end circuit test.
@@ -1062,12 +1190,14 @@ exact-q12/
 ├── exactq12/
 │   ├── __init__.py
 │   ├── benchmark.py
+│   ├── binary.py
 │   ├── cli.py
 │   ├── complex_q12.py
 │   ├── gates.py
 │   ├── logging_utils.py
 │   ├── parser.py
 │   ├── q12.py
+│   ├── repl.py
 │   └── statevector.py
 ├── examples/
 │   ├── bell.q12
@@ -1078,6 +1208,7 @@ exact-q12/
 │   └── t8.q12
 ├── tests/
 │   ├── test_circuits.py
+│   ├── test_binary_repl.py
 │   ├── test_complex_q12.py
 │   ├── test_gates.py
 │   ├── test_parser_cli_benchmark.py
@@ -1099,18 +1230,19 @@ Phase 1, completed in the initial model:
 - Required mathematical tests.
 - GitHub Actions CI on Python 3.11, 3.12, and 3.13.
 
-Phase 2, future:
+Phase 2, completed in the initial model:
 
 - REPL.
+- CLI benchmark.
 - CLI usability improvements.
 
-Phase 3, future:
+Phase 3, completed in the initial model:
 
 - Binary circuit export.
 
-Phase 4, future:
+Phase 4, started:
 
-- Simulated FPGA backend.
+- Software simulator for the binary stream with `exactq12 fpga run`.
 
 Phase 5, future:
 
@@ -1138,6 +1270,8 @@ python3 -m compileall exactq12 tests
 python3 -m pytest
 python3 -m exactq12.cli run examples/bell.q12
 python3 -m exactq12.cli bench --qubits 2 --gates 10 --repetitions 2
+python3 -m exactq12.cli export examples/bell.q12 --format bin --out bell.bin
+python3 -m exactq12.cli fpga run bell.bin
 ```
 
 GitHub Actions CI runs the main checks on multiple Python versions. If a change affects the CLI, `.q12` format, benchmark, logs, or theory, update this README in the same commit.
