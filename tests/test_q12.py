@@ -12,7 +12,7 @@ def test_add_aligns_denominators() -> None:
 def test_multiplication_formula() -> None:
     x = Q12(1, 2, 3, 4, 0)
     y = Q12(5, 6, 7, 8, 0)
-    assert x * y == Q12(225, 106, 101, 52, 0)
+    assert x * y == Q12(284, 172, 102, 60, 0)
 
 
 def test_exact_roots_square_to_expected_rationals() -> None:
