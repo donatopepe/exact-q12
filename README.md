@@ -102,7 +102,7 @@ Implementato:
 - `state-export` e `state-dump` generano e ispezionano immagini memoria statevector RTL.
 - Utility Python di packing RTL per `Q12` e `CQ12`.
 - Primi moduli SystemVerilog combinatori in `rtl/`.
-- Blocchi RTL add/sub per `Q12` e `CQ12` con esponenti già allineati.
+- Blocchi RTL add/sub per `Q12` e `CQ12`, inclusa variante con allineamento limitato degli esponenti.
 - Prime memorie RTL e sequencer fetch/decode/halt in `rtl/`.
 - Top-level RTL simulativo che collega ROM, sequencer e memoria statevector.
 - Testbench SystemVerilog opzionali eseguibili con Icarus Verilog.
@@ -477,6 +477,8 @@ La Fase 5 è iniziata con i primi blocchi combinatori in `rtl/`:
 - `rtl/exactq12_top.sv`: shell simulativa che collega ROM, sequencer e memoria statevector.
 - `rtl/q12_add.sv`: somma/sottrazione combinatoria per `Q12` con esponenti già allineati.
 - `rtl/q12_complex_add.sv`: somma/sottrazione combinatoria per `CQ12` con due istanze `q12_add`.
+- `rtl/q12_add_aligned.sv`: somma/sottrazione `Q12` che scala al denominatore comune `12^max(E0,E1)` fino a `MAX_SHIFT`.
+- `rtl/q12_complex_add_aligned.sv`: somma/sottrazione `CQ12` con allineamento indipendente di parte reale e immaginaria.
 - `rtl/bell.memh`: programma Bell in formato ROM hex.
 - `rtl/tb/`: testbench SystemVerilog auto-verificanti opzionali.
 - `rtl/Makefile`: target opzionali per simulazione locale con Icarus Verilog.
@@ -521,7 +523,7 @@ La suite pytest copre:
 - Export `state-init` per memoria statevector RTL.
 - Roundtrip `state-export`/`state-dump` per immagini memoria RTL.
 - Formule RTL `q12_mul`, `q12_complex_mul`, opcode, decoder, ROM, memoria e riduzione denominatore confrontati con il modello Python.
-- Formule RTL add/sub `q12_add` e `q12_complex_add` confrontate con il modello Python.
+- Formule RTL add/sub `q12_add`, `q12_complex_add` e varianti aligned confrontate con il modello Python.
 - Wiring statico del top-level RTL verificato dai test.
 - Presenza di testbench SystemVerilog auto-verificanti e Makefile RTL.
 - Conservazione esatta della normalizzazione dopo sequenze di gate supportati.
@@ -665,7 +667,9 @@ exact-q12/
 │   ├── instruction_decoder.sv
 │   ├── program_rom.sv
 │   ├── q12_add.sv
+│   ├── q12_add_aligned.sv
 │   ├── q12_complex_add.sv
+│   ├── q12_complex_add_aligned.sv
 │   ├── q12_complex_mul.sv
 │   ├── q12_den_reduce.sv
 │   ├── q12_mul.sv
@@ -705,7 +709,7 @@ Fase 4, iniziata:
 
 Fase 5, iniziata:
 
-- Moduli SystemVerilog combinatori `q12_add`, `q12_complex_add`, `q12_mul`, `q12_complex_mul`, `q12_den_reduce` e decoder istruzioni.
+- Moduli SystemVerilog combinatori `q12_add`, `q12_add_aligned`, `q12_complex_add`, `q12_complex_add_aligned`, `q12_mul`, `q12_complex_mul`, `q12_den_reduce` e decoder istruzioni.
 - Memorie RTL iniziali e sequencer fetch/decode/halt.
 - Top-level RTL simulativo non board-specific.
 - Testbench SystemVerilog opzionali per Icarus Verilog.
@@ -865,7 +869,7 @@ Implemented:
 - `state-export` and `state-dump` generate and inspect RTL statevector memory images.
 - Python RTL packing utilities for `Q12` and `CQ12`.
 - First combinational SystemVerilog modules in `rtl/`.
-- RTL add/sub blocks for `Q12` and `CQ12` with already aligned exponents.
+- RTL add/sub blocks for `Q12` and `CQ12`, including a variant with limited exponent alignment.
 - First RTL memories and fetch/decode/halt sequencer in `rtl/`.
 - Simulation-oriented RTL top-level wiring ROM, sequencer, and statevector memory.
 - Optional SystemVerilog testbenches runnable with Icarus Verilog.
@@ -1240,6 +1244,8 @@ Phase 5 has started with the first combinational blocks in `rtl/`:
 - `rtl/exactq12_top.sv`: simulation shell wiring ROM, sequencer, and statevector memory.
 - `rtl/q12_add.sv`: combinational add/subtract for `Q12` values with already aligned exponents.
 - `rtl/q12_complex_add.sv`: combinational add/subtract for `CQ12` values using two `q12_add` instances.
+- `rtl/q12_add_aligned.sv`: `Q12` add/subtract that scales to the common denominator `12^max(E0,E1)` up to `MAX_SHIFT`.
+- `rtl/q12_complex_add_aligned.sv`: `CQ12` add/subtract with independent real and imaginary exponent alignment.
 - `rtl/bell.memh`: Bell program in ROM hex format.
 - `rtl/tb/`: optional self-checking SystemVerilog testbenches.
 - `rtl/Makefile`: optional local Icarus Verilog simulation targets.
@@ -1283,7 +1289,7 @@ The pytest suite covers:
 - `state-init` export for RTL statevector memory.
 - `state-export`/`state-dump` roundtrip for RTL memory images.
 - RTL formulas for `q12_mul`, `q12_complex_mul`, opcodes, decoder, ROM, memory, and denominator reduction compared against the Python model.
-- RTL add/sub formulas for `q12_add` and `q12_complex_add` compared against the Python model.
+- RTL add/sub formulas for `q12_add`, `q12_complex_add`, and aligned variants compared against the Python model.
 - Static RTL top-level wiring verified by tests.
 - Presence of self-checking SystemVerilog testbenches and RTL Makefile.
 - Exact normalization preservation after supported gate sequences.
@@ -1427,7 +1433,9 @@ exact-q12/
 │   ├── instruction_decoder.sv
 │   ├── program_rom.sv
 │   ├── q12_add.sv
+│   ├── q12_add_aligned.sv
 │   ├── q12_complex_add.sv
+│   ├── q12_complex_add_aligned.sv
 │   ├── q12_complex_mul.sv
 │   ├── q12_den_reduce.sv
 │   ├── q12_mul.sv
@@ -1467,7 +1475,7 @@ Phase 4, started:
 
 Phase 5, started:
 
-- Combinational SystemVerilog modules `q12_add`, `q12_complex_add`, `q12_mul`, `q12_complex_mul`, `q12_den_reduce`, and instruction decoder.
+- Combinational SystemVerilog modules `q12_add`, `q12_add_aligned`, `q12_complex_add`, `q12_complex_add_aligned`, `q12_mul`, `q12_complex_mul`, `q12_den_reduce`, and instruction decoder.
 - Initial RTL memories and fetch/decode/halt sequencer.
 - Non-board-specific simulation RTL top-level.
 - Optional SystemVerilog testbenches for Icarus Verilog.

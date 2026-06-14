@@ -39,6 +39,30 @@ def rtl_q12_add(
     )
 
 
+def rtl_q12_add_aligned(
+    x: tuple[int, int, int, int, int],
+    y: tuple[int, int, int, int, int],
+    subtract: bool = False,
+    max_shift: int = 4,
+) -> tuple[int, int, int, int, int, bool]:
+    a0, b0, c0, d0, e0 = x
+    a1, b1, c1, d1, e1 = y
+    e_out = max(e0, e1)
+    diff0 = e_out - e0
+    diff1 = e_out - e1
+    scale0 = 12**diff0
+    scale1 = 12**diff1
+    sign = -1 if subtract else 1
+    return (
+        (a0 * scale0) + sign * (a1 * scale1),
+        (b0 * scale0) + sign * (b1 * scale1),
+        (c0 * scale0) + sign * (c1 * scale1),
+        (d0 * scale0) + sign * (d1 * scale1),
+        e_out,
+        diff0 <= max_shift and diff1 <= max_shift,
+    )
+
+
 def test_rtl_q12_mul_formula_matches_python_model() -> None:
     cases = [
         ((1, 2, 3, 4), (5, 6, 7, 8)),
@@ -85,6 +109,27 @@ def test_rtl_q12_add_flags_mismatched_exponents_invalid() -> None:
     assert rtl_q12_add((1, 2, 3, 4, 1), (5, 6, 7, 8, 2))[-1] is False
 
 
+def test_rtl_q12_add_aligned_matches_python_model_without_reduction() -> None:
+    left = Q12(3, -2, 4, -5, 1)
+    right = Q12(-1, 7, -3, 2, 3)
+
+    add = rtl_q12_add_aligned((left.a, left.b, left.c, left.d, left.E), (right.a, right.b, right.c, right.d, right.E))
+    sub = rtl_q12_add_aligned(
+        (left.a, left.b, left.c, left.d, left.E),
+        (right.a, right.b, right.c, right.d, right.E),
+        subtract=True,
+    )
+
+    assert add == (431, -281, 573, -718, 3, True)
+    assert sub == (433, -295, 579, -722, 3, True)
+    assert Q12(*add[:-1]) == left + right
+    assert Q12(*sub[:-1]) == left - right
+
+
+def test_rtl_q12_add_aligned_flags_large_exponent_gap_invalid() -> None:
+    assert rtl_q12_add_aligned((1, 2, 3, 4, 0), (5, 6, 7, 8, 5), max_shift=4)[-1] is False
+
+
 def test_rtl_complex_add_same_exponent_matches_python_model() -> None:
     left = CQ12(Q12(3, -2, 4, -5, 2), Q12(1, 2, 3, 4, 2))
     right = CQ12(Q12(-1, 7, -3, 2, 2), Q12(5, -6, 7, -8, 2))
@@ -103,11 +148,33 @@ def test_rtl_complex_add_same_exponent_matches_python_model() -> None:
     assert imag == (expected.imag.a, expected.imag.b, expected.imag.c, expected.imag.d, expected.imag.E, True)
 
 
+def test_rtl_complex_add_aligned_matches_python_model() -> None:
+    left = CQ12(Q12(3, -2, 4, -5, 1), Q12(1, 2, 3, 4, 2))
+    right = CQ12(Q12(-1, 7, -3, 2, 3), Q12(5, -6, 7, -8, 1))
+
+    real = rtl_q12_add_aligned(
+        (left.real.a, left.real.b, left.real.c, left.real.d, left.real.E),
+        (right.real.a, right.real.b, right.real.c, right.real.d, right.real.E),
+    )
+    imag = rtl_q12_add_aligned(
+        (left.imag.a, left.imag.b, left.imag.c, left.imag.d, left.imag.E),
+        (right.imag.a, right.imag.b, right.imag.c, right.imag.d, right.imag.E),
+    )
+    expected = left + right
+
+    assert real == (431, -281, 573, -718, 3, True)
+    assert imag == (61, -70, 87, -92, 2, True)
+    assert Q12(*real[:-1]) == expected.real
+    assert Q12(*imag[:-1]) == expected.imag
+
+
 def test_rtl_files_contain_expected_modules_and_formulas() -> None:
     q12_mul = (ROOT / "rtl" / "q12_mul.sv").read_text(encoding="utf-8")
     complex_mul = (ROOT / "rtl" / "q12_complex_mul.sv").read_text(encoding="utf-8")
     q12_add = (ROOT / "rtl" / "q12_add.sv").read_text(encoding="utf-8")
     complex_add = (ROOT / "rtl" / "q12_complex_add.sv").read_text(encoding="utf-8")
+    q12_add_aligned = (ROOT / "rtl" / "q12_add_aligned.sv").read_text(encoding="utf-8")
+    complex_add_aligned = (ROOT / "rtl" / "q12_complex_add_aligned.sv").read_text(encoding="utf-8")
 
     assert "module q12_mul" in q12_mul
     assert "A = (a * e) + 2 * (b * f) + 3 * (c * g) + 6 * (d * h);" in q12_mul
@@ -128,6 +195,16 @@ def test_rtl_files_contain_expected_modules_and_formulas() -> None:
     assert "module q12_complex_add" in complex_add
     assert complex_add.count("q12_add #(.W(W), .EW(EW))") == 2
     assert "valid = real_valid && imag_valid;" in complex_add
+
+    assert "module q12_add_aligned" in q12_add_aligned
+    assert "parameter int MAX_SHIFT = 4" in q12_add_aligned
+    assert "e_out = (e0 >= e1) ? e0 : e1;" in q12_add_aligned
+    assert "result = result * 12;" in q12_add_aligned
+    assert "a_out = (a0 * scale0) + (a1 * scale1);" in q12_add_aligned
+
+    assert "module q12_complex_add_aligned" in complex_add_aligned
+    assert complex_add_aligned.count("q12_add_aligned #(.W(W), .EW(EW), .OUT_W(OUT_W), .MAX_SHIFT(MAX_SHIFT))") == 2
+    assert "valid = real_valid && imag_valid;" in complex_add_aligned
 
 
 def test_rtl_opcode_package_matches_python_binary_encoder() -> None:
@@ -247,7 +324,9 @@ def test_rtl_testbenches_are_self_checking() -> None:
     testbenches = [
         ROOT / "rtl" / "tb" / "q12_mul_tb.sv",
         ROOT / "rtl" / "tb" / "q12_add_tb.sv",
+        ROOT / "rtl" / "tb" / "q12_add_aligned_tb.sv",
         ROOT / "rtl" / "tb" / "q12_complex_add_tb.sv",
+        ROOT / "rtl" / "tb" / "q12_complex_add_aligned_tb.sv",
         ROOT / "rtl" / "tb" / "instruction_decoder_tb.sv",
         ROOT / "rtl" / "tb" / "exactq12_sequencer_tb.sv",
     ]
@@ -283,7 +362,9 @@ def test_rtl_makefile_runs_optional_iverilog_sims() -> None:
     assert "VVP ?= vvp" in makefile
     assert "q12_mul_tb" in makefile
     assert "q12_add_tb" in makefile
+    assert "q12_add_aligned_tb" in makefile
     assert "q12_complex_add_tb" in makefile
+    assert "q12_complex_add_aligned_tb" in makefile
     assert "instruction_decoder_tb" in makefile
     assert "exactq12_sequencer_tb" in makefile
     assert "-g2012" in makefile
