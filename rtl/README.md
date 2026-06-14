@@ -15,6 +15,8 @@ Current modules:
 - `q12_den_reduce.sv`: one-step denominator reduction by base 12.
 - `bell.memh`: binary Bell program in ROM hex format.
 - `README_TOP.md`: top-level limitations and integration notes.
+- `tb/`: optional self-checking SystemVerilog testbenches.
+- `Makefile`: optional Icarus Verilog simulation targets.
 
 Python helpers:
 
@@ -22,3 +24,11 @@ Python helpers:
 - `exactq12.rtl_pack` packs and unpacks `Q12`/`CQ12` values using the same field order expected by `statevector_mem.sv`.
 
 The sequencer currently decodes instructions and halts on `DUMP` or invalid opcodes. The top-level wires memory and control blocks together for future HDL simulation, but it does not yet execute gate datapaths over statevector memory. These modules do not yet implement a complete datapath, UART, board constraints, or Tang Nano 20K integration. The Python model remains the reference implementation.
+
+Optional local HDL simulation:
+
+```bash
+make -C rtl sim
+```
+
+This requires `iverilog` and `vvp` to be installed locally. It is not required by the Python test suite or CI yet.

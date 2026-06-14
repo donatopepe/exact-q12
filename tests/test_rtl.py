@@ -177,3 +177,27 @@ def test_rtl_top_notes_document_current_limitations() -> None:
     assert "simulation-oriented integration shell" in notes
     assert "gate execution is not connected" in notes
     assert "not a Tang Nano 20K top-level" in notes
+
+
+def test_rtl_testbenches_are_self_checking() -> None:
+    testbenches = [
+        ROOT / "rtl" / "tb" / "q12_mul_tb.sv",
+        ROOT / "rtl" / "tb" / "instruction_decoder_tb.sv",
+        ROOT / "rtl" / "tb" / "exactq12_sequencer_tb.sv",
+    ]
+    for testbench in testbenches:
+        text = testbench.read_text(encoding="utf-8")
+        assert "$fatal" in text
+        assert "$finish" in text
+        assert "passed" in text
+
+
+def test_rtl_makefile_runs_optional_iverilog_sims() -> None:
+    makefile = (ROOT / "rtl" / "Makefile").read_text(encoding="utf-8")
+
+    assert "IVERILOG ?= iverilog" in makefile
+    assert "VVP ?= vvp" in makefile
+    assert "q12_mul_tb" in makefile
+    assert "instruction_decoder_tb" in makefile
+    assert "exactq12_sequencer_tb" in makefile
+    assert "-g2012" in makefile

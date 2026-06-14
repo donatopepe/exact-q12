@@ -101,6 +101,7 @@ Implementato:
 - Primi moduli SystemVerilog combinatori in `rtl/`.
 - Prime memorie RTL e sequencer fetch/decode/halt in `rtl/`.
 - Top-level RTL simulativo che collega ROM, sequencer e memoria statevector.
+- Testbench SystemVerilog opzionali eseguibili con Icarus Verilog.
 - Esempi `.q12`.
 - Test pytest per aritmetica, numeri complessi, gate, parser, CLI, benchmark e circuiti obbligatori.
 
@@ -471,6 +472,8 @@ La Fase 5 è iniziata con i primi blocchi combinatori in `rtl/`:
 - `rtl/exactq12_sequencer.sv`: scheletro fetch/decode/halt.
 - `rtl/exactq12_top.sv`: shell simulativa che collega ROM, sequencer e memoria statevector.
 - `rtl/bell.memh`: programma Bell in formato ROM hex.
+- `rtl/tb/`: testbench SystemVerilog auto-verificanti opzionali.
+- `rtl/Makefile`: target opzionali per simulazione locale con Icarus Verilog.
 - `exactq12/rtl_pack.py`: packing/unpacking Python di `Q12` e `CQ12` nel layout usato dalla memoria RTL.
 
 Questi moduli sono volutamente piccoli e verificabili. Non implementano ancora:
@@ -482,6 +485,14 @@ Questi moduli sono volutamente piccoli e verificabili. Non implementano ancora:
 - file constraint o progetto EDA.
 
 Il sequencer RTL attuale decodifica istruzioni e si ferma su `DUMP` o opcode non valido; il top-level collega i blocchi ma non applica ancora gate alla memoria statevector. La verifica attuale è fatta con test Python che confrontano formule, opcode, ROM e riduzione attesa contro il modello Python esatto. Questo non sostituisce una simulazione SystemVerilog con Verilator/Icarus/Gowin, ma impedisce divergenze immediate tra specifica e RTL iniziale.
+
+Simulazione HDL locale opzionale:
+
+```bash
+make -C rtl sim
+```
+
+Richiede `iverilog` e `vvp` installati localmente. Non è ancora richiesta dalla suite pytest o dalla CI.
 
 ### Batteria di test
 
@@ -503,6 +514,7 @@ La suite pytest copre:
 - Roundtrip `state-export`/`state-dump` per immagini memoria RTL.
 - Formule RTL `q12_mul`, `q12_complex_mul`, opcode, decoder, ROM, memoria e riduzione denominatore confrontati con il modello Python.
 - Wiring statico del top-level RTL verificato dai test.
+- Presenza di testbench SystemVerilog auto-verificanti e Makefile RTL.
 - Conservazione esatta della normalizzazione dopo sequenze di gate supportati.
 
 Quando si aggiunge un gate, il minimo richiesto è aggiungere un test di aritmetica della fase, un test sullo statevector e un test circuito end-to-end.
@@ -636,6 +648,7 @@ exact-q12/
 ├── rtl/
 │   ├── README.md
 │   ├── README_TOP.md
+│   ├── Makefile
 │   ├── bell.memh
 │   ├── exactq12_sequencer.sv
 │   ├── exactq12_top.sv
@@ -645,7 +658,8 @@ exact-q12/
 │   ├── q12_complex_mul.sv
 │   ├── q12_den_reduce.sv
 │   ├── q12_mul.sv
-│   └── statevector_mem.sv
+│   ├── statevector_mem.sv
+│   └── tb/
 ├── PROJECT_CONTEXT_EXACT_Q12.md
 ├── pyproject.toml
 ├── README.md
@@ -683,6 +697,7 @@ Fase 5, iniziata:
 - Moduli SystemVerilog combinatori `q12_mul`, `q12_complex_mul`, `q12_den_reduce` e decoder istruzioni.
 - Memorie RTL iniziali e sequencer fetch/decode/halt.
 - Top-level RTL simulativo non board-specific.
+- Testbench SystemVerilog opzionali per Icarus Verilog.
 - Futuro: esecuzione gate sul datapath statevector, UART debug, top-level Tang Nano 20K.
 
 Fase 6, futura:
@@ -841,6 +856,7 @@ Implemented:
 - First combinational SystemVerilog modules in `rtl/`.
 - First RTL memories and fetch/decode/halt sequencer in `rtl/`.
 - Simulation-oriented RTL top-level wiring ROM, sequencer, and statevector memory.
+- Optional SystemVerilog testbenches runnable with Icarus Verilog.
 - `.q12` examples.
 - Pytest tests for arithmetic, complex numbers, gates, parser, CLI, benchmark, and required circuits.
 
@@ -1211,6 +1227,8 @@ Phase 5 has started with the first combinational blocks in `rtl/`:
 - `rtl/exactq12_sequencer.sv`: fetch/decode/halt skeleton.
 - `rtl/exactq12_top.sv`: simulation shell wiring ROM, sequencer, and statevector memory.
 - `rtl/bell.memh`: Bell program in ROM hex format.
+- `rtl/tb/`: optional self-checking SystemVerilog testbenches.
+- `rtl/Makefile`: optional local Icarus Verilog simulation targets.
 - `exactq12/rtl_pack.py`: Python packing/unpacking for `Q12` and `CQ12` using the RTL memory layout.
 
 These modules are intentionally small and easy to inspect. They do not yet implement:
@@ -1221,6 +1239,14 @@ These modules are intentionally small and easy to inspect. They do not yet imple
 - constraint files or EDA project files.
 
 The current RTL sequencer decodes instructions and halts on `DUMP` or invalid opcodes; the top-level wires blocks together but does not yet apply gates to statevector memory. Current verification uses Python tests that compare formulas, opcodes, ROM contents, and expected reduction behavior against the exact Python model. This does not replace SystemVerilog simulation with Verilator/Icarus/Gowin, but it prevents immediate divergence between the specification and the initial RTL.
+
+Optional local HDL simulation:
+
+```bash
+make -C rtl sim
+```
+
+This requires `iverilog` and `vvp` to be installed locally. It is not required by the pytest suite or CI yet.
 
 ### Test Battery
 
@@ -1242,6 +1268,7 @@ The pytest suite covers:
 - `state-export`/`state-dump` roundtrip for RTL memory images.
 - RTL formulas for `q12_mul`, `q12_complex_mul`, opcodes, decoder, ROM, memory, and denominator reduction compared against the Python model.
 - Static RTL top-level wiring verified by tests.
+- Presence of self-checking SystemVerilog testbenches and RTL Makefile.
 - Exact normalization preservation after supported gate sequences.
 
 When a gate is added, the minimum expected coverage is an arithmetic test for its phase, a statevector test, and an end-to-end circuit test.
@@ -1375,6 +1402,7 @@ exact-q12/
 ├── rtl/
 │   ├── README.md
 │   ├── README_TOP.md
+│   ├── Makefile
 │   ├── bell.memh
 │   ├── exactq12_sequencer.sv
 │   ├── exactq12_top.sv
@@ -1384,7 +1412,8 @@ exact-q12/
 │   ├── q12_complex_mul.sv
 │   ├── q12_den_reduce.sv
 │   ├── q12_mul.sv
-│   └── statevector_mem.sv
+│   ├── statevector_mem.sv
+│   └── tb/
 ├── PROJECT_CONTEXT_EXACT_Q12.md
 ├── pyproject.toml
 ├── README.md
@@ -1422,6 +1451,7 @@ Phase 5, started:
 - Combinational SystemVerilog modules `q12_mul`, `q12_complex_mul`, `q12_den_reduce`, and instruction decoder.
 - Initial RTL memories and fetch/decode/halt sequencer.
 - Non-board-specific simulation RTL top-level.
+- Optional SystemVerilog testbenches for Icarus Verilog.
 - Future: gate execution over the statevector datapath, UART debug, Tang Nano 20K top-level.
 
 Phase 6, future:
