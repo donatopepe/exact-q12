@@ -47,6 +47,21 @@ def encode_memh(instructions: list[Instruction]) -> str:
     return "\n".join(payload[offset : offset + 3].hex() for offset in range(0, len(payload), 3)) + "\n"
 
 
+def decode_memh(text: str) -> list[Instruction]:
+    payload = bytearray()
+    for line_number, raw_line in enumerate(text.splitlines(), start=1):
+        line = raw_line.split("#", 1)[0].strip()
+        if not line:
+            continue
+        if len(line) != 6:
+            raise ValueError(f"line {line_number}: memh instruction must be 6 hex digits")
+        try:
+            payload.extend(bytes.fromhex(line))
+        except ValueError as exc:
+            raise ValueError(f"line {line_number}: invalid hex instruction") from exc
+    return decode_instructions(bytes(payload))
+
+
 def decode_instructions(payload: bytes) -> list[Instruction]:
     if len(payload) % 3 != 0:
         raise ValueError("binary payload length must be a multiple of 3")
@@ -88,3 +103,14 @@ def export_memh(source_path: str | Path, output_path: str | Path) -> int:
 
 def run_binary(path: str | Path) -> tuple[Statevector, list[str]]:
     return execute(decode_instructions(Path(path).read_bytes()))
+
+
+def run_memh(path: str | Path) -> tuple[Statevector, list[str]]:
+    return execute(decode_memh(Path(path).read_text(encoding="utf-8")))
+
+
+def run_program_image(path: str | Path) -> tuple[Statevector, list[str]]:
+    path = Path(path)
+    if path.suffix.lower() == ".memh":
+        return run_memh(path)
+    return run_binary(path)

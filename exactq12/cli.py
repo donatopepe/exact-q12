@@ -2,13 +2,15 @@ from __future__ import annotations
 
 import argparse
 import json
+from pathlib import Path
 
 from exactq12.benchmark import run_benchmark
-from exactq12.binary import export_binary, export_memh, run_binary
+from exactq12.binary import export_binary, export_memh, run_program_image
 from exactq12.gates import execute
 from exactq12.logging_utils import JsonlLogger
 from exactq12.parser import parse_file
 from exactq12.repl import repl
+from exactq12.rtl_pack import reset_statevector_memh
 
 
 def run(path: str, log_path: str | None = None) -> int:
@@ -42,9 +44,18 @@ def export(path: str, output_path: str, export_format: str) -> int:
 
 
 def fpga_run(path: str) -> int:
-    _, output = run_binary(path)
+    _, output = run_program_image(path)
     for line in output:
         print(line)
+    return 0
+
+
+def state_init(qubits: int, output_path: str) -> int:
+    if qubits < 1:
+        raise ValueError("qubits must be >= 1")
+    text = reset_statevector_memh(qubits)
+    Path(output_path).write_text(text, encoding="utf-8")
+    print(f"wrote {2**qubits} amplitudes to {output_path}")
     return 0
 
 
@@ -72,6 +83,10 @@ def main(argv: list[str] | None = None) -> int:
     export_parser.add_argument("--format", choices=["bin", "memh"], required=True)
     export_parser.add_argument("--out", required=True)
 
+    state_init_parser = subparsers.add_parser("state-init")
+    state_init_parser.add_argument("--qubits", type=int, required=True)
+    state_init_parser.add_argument("--out", required=True)
+
     fpga_parser = subparsers.add_parser("fpga")
     fpga_subparsers = fpga_parser.add_subparsers(dest="fpga_command", required=True)
     fpga_run_parser = fpga_subparsers.add_parser("run")
@@ -90,6 +105,8 @@ def main(argv: list[str] | None = None) -> int:
         return dump(args.path)
     if args.command == "export":
         return export(args.path, args.out, args.format)
+    if args.command == "state-init":
+        return state_init(args.qubits, args.out)
     if args.command == "fpga" and args.fpga_command == "run":
         return fpga_run(args.path)
     parser.error(f"unsupported command: {args.command}")

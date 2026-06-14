@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from exactq12.complex_q12 import CQ12
 from exactq12.q12 import Q12
+from exactq12.statevector import Statevector
 
 
 def _pack_signed(value: int, width: int) -> int:
@@ -60,3 +61,11 @@ def cq12_hex(value: CQ12, coeff_width: int = 32, exp_width: int = 8) -> str:
     total_width = 2 * ((4 * coeff_width) + exp_width)
     hex_digits = (total_width + 3) // 4
     return f"{pack_cq12(value, coeff_width, exp_width):0{hex_digits}x}"
+
+
+def statevector_memh(state: Statevector, coeff_width: int = 32, exp_width: int = 8) -> str:
+    return "\n".join(cq12_hex(amplitude, coeff_width, exp_width) for amplitude in state.amplitudes) + "\n"
+
+
+def reset_statevector_memh(num_qubits: int, coeff_width: int = 32, exp_width: int = 8) -> str:
+    return statevector_memh(Statevector.reset(num_qubits), coeff_width, exp_width)

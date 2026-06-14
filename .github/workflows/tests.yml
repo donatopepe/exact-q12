@@ -30,3 +30,5 @@ jobs:
           exactq12 export examples/bell.q12 --format bin --out bell.bin
           exactq12 export examples/bell.q12 --format memh --out bell.memh
           exactq12 fpga run bell.bin
+          exactq12 fpga run bell.memh
+          exactq12 state-init --qubits 2 --out reset2.memh

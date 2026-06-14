@@ -2,7 +2,8 @@ import pytest
 
 from exactq12.complex_q12 import CQ12
 from exactq12.q12 import Q12
-from exactq12.rtl_pack import cq12_hex, pack_cq12, pack_q12, unpack_cq12, unpack_q12
+from exactq12.rtl_pack import cq12_hex, pack_cq12, pack_q12, reset_statevector_memh, statevector_memh, unpack_cq12, unpack_q12
+from exactq12.statevector import Statevector
 
 
 def test_pack_q12_roundtrip() -> None:
@@ -39,3 +40,17 @@ def test_pack_rejects_out_of_range_fields() -> None:
         pack_q12(Q12(128, 0, 0, 0, 0), coeff_width=8, exp_width=4)
     with pytest.raises(ValueError, match="exponent"):
         pack_q12(Q12(1, 0, 0, 0, 16), coeff_width=8, exp_width=4)
+
+
+def test_statevector_memh_reset_layout() -> None:
+    text = reset_statevector_memh(2)
+    lines = text.splitlines()
+    assert len(lines) == 4
+    assert lines[0] == cq12_hex(CQ12.one())
+    assert lines[1:] == [cq12_hex(CQ12.zero()), cq12_hex(CQ12.zero()), cq12_hex(CQ12.zero())]
+
+
+def test_statevector_memh_uses_current_amplitudes() -> None:
+    state = Statevector.reset(1)
+    state.apply_h(0)
+    assert statevector_memh(state).splitlines() == [cq12_hex(state.amplitudes[0]), cq12_hex(state.amplitudes[1])]
