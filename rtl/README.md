@@ -10,6 +10,8 @@ Current modules:
 - `statevector_mem.sv`: synchronous memory for packed `CQ12` amplitudes.
 - `exactq12_sequencer.sv`: first fetch/decode/halt sequencer skeleton.
 - `exactq12_top.sv`: simulation-oriented shell wiring ROM, sequencer, and state memory.
+- `q12_add.sv`: combinational add/subtract for `Q12` values with already aligned exponents.
+- `q12_complex_add.sv`: combinational add/subtract for `CQ12` values using two `q12_add` instances.
 - `q12_mul.sv`: combinational multiplication for `a + b√2 + c√3 + d√6` numerators.
 - `q12_complex_mul.sv`: combinational complex multiplication using four `q12_mul` instances.
 - `q12_den_reduce.sv`: one-step denominator reduction by base 12.

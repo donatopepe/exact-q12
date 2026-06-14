@@ -21,6 +21,24 @@ def rtl_q12_mul(x: tuple[int, int, int, int], y: tuple[int, int, int, int]) -> t
     )
 
 
+def rtl_q12_add(
+    x: tuple[int, int, int, int, int],
+    y: tuple[int, int, int, int, int],
+    subtract: bool = False,
+) -> tuple[int, int, int, int, int, bool]:
+    a0, b0, c0, d0, e0 = x
+    a1, b1, c1, d1, e1 = y
+    sign = -1 if subtract else 1
+    return (
+        a0 + sign * a1,
+        b0 + sign * b1,
+        c0 + sign * c1,
+        d0 + sign * d1,
+        e0,
+        e0 == e1,
+    )
+
+
 def test_rtl_q12_mul_formula_matches_python_model() -> None:
     cases = [
         ((1, 2, 3, 4), (5, 6, 7, 8)),
@@ -50,9 +68,46 @@ def test_rtl_complex_mul_formula_matches_python_model() -> None:
     assert imag == (expected.imag.a, expected.imag.b, expected.imag.c, expected.imag.d)
 
 
+def test_rtl_q12_add_same_exponent_matches_python_model() -> None:
+    left = Q12(3, -2, 4, -5, 2)
+    right = Q12(-1, 7, -3, 2, 2)
+
+    add = rtl_q12_add((left.a, left.b, left.c, left.d, left.E), (right.a, right.b, right.c, right.d, right.E))
+    sub = rtl_q12_add((left.a, left.b, left.c, left.d, left.E), (right.a, right.b, right.c, right.d, right.E), subtract=True)
+
+    expected_add = left + right
+    expected_sub = left - right
+    assert add == (expected_add.a, expected_add.b, expected_add.c, expected_add.d, expected_add.E, True)
+    assert sub == (expected_sub.a, expected_sub.b, expected_sub.c, expected_sub.d, expected_sub.E, True)
+
+
+def test_rtl_q12_add_flags_mismatched_exponents_invalid() -> None:
+    assert rtl_q12_add((1, 2, 3, 4, 1), (5, 6, 7, 8, 2))[-1] is False
+
+
+def test_rtl_complex_add_same_exponent_matches_python_model() -> None:
+    left = CQ12(Q12(3, -2, 4, -5, 2), Q12(1, 2, 3, 4, 2))
+    right = CQ12(Q12(-1, 7, -3, 2, 2), Q12(5, -6, 7, -8, 2))
+    expected = left + right
+
+    real = rtl_q12_add(
+        (left.real.a, left.real.b, left.real.c, left.real.d, left.real.E),
+        (right.real.a, right.real.b, right.real.c, right.real.d, right.real.E),
+    )
+    imag = rtl_q12_add(
+        (left.imag.a, left.imag.b, left.imag.c, left.imag.d, left.imag.E),
+        (right.imag.a, right.imag.b, right.imag.c, right.imag.d, right.imag.E),
+    )
+
+    assert real == (expected.real.a, expected.real.b, expected.real.c, expected.real.d, expected.real.E, True)
+    assert imag == (expected.imag.a, expected.imag.b, expected.imag.c, expected.imag.d, expected.imag.E, True)
+
+
 def test_rtl_files_contain_expected_modules_and_formulas() -> None:
     q12_mul = (ROOT / "rtl" / "q12_mul.sv").read_text(encoding="utf-8")
     complex_mul = (ROOT / "rtl" / "q12_complex_mul.sv").read_text(encoding="utf-8")
+    q12_add = (ROOT / "rtl" / "q12_add.sv").read_text(encoding="utf-8")
+    complex_add = (ROOT / "rtl" / "q12_complex_add.sv").read_text(encoding="utf-8")
 
     assert "module q12_mul" in q12_mul
     assert "A = (a * e) + 2 * (b * f) + 3 * (c * g) + 6 * (d * h);" in q12_mul
@@ -64,6 +119,15 @@ def test_rtl_files_contain_expected_modules_and_formulas() -> None:
     assert complex_mul.count("q12_mul #(.W(W))") == 4
     assert "out_ar = rr_a - ii_a;" in complex_mul
     assert "out_ai = ri_a + ir_a;" in complex_mul
+
+    assert "module q12_add" in q12_add
+    assert "valid = (e0 == e1);" in q12_add
+    assert "a_out = a0 - a1;" in q12_add
+    assert "a_out = a0 + a1;" in q12_add
+
+    assert "module q12_complex_add" in complex_add
+    assert complex_add.count("q12_add #(.W(W), .EW(EW))") == 2
+    assert "valid = real_valid && imag_valid;" in complex_add
 
 
 def test_rtl_opcode_package_matches_python_binary_encoder() -> None:
@@ -182,6 +246,8 @@ def test_rtl_top_notes_document_current_limitations() -> None:
 def test_rtl_testbenches_are_self_checking() -> None:
     testbenches = [
         ROOT / "rtl" / "tb" / "q12_mul_tb.sv",
+        ROOT / "rtl" / "tb" / "q12_add_tb.sv",
+        ROOT / "rtl" / "tb" / "q12_complex_add_tb.sv",
         ROOT / "rtl" / "tb" / "instruction_decoder_tb.sv",
         ROOT / "rtl" / "tb" / "exactq12_sequencer_tb.sv",
     ]
@@ -216,6 +282,8 @@ def test_rtl_makefile_runs_optional_iverilog_sims() -> None:
     assert "IVERILOG ?= iverilog" in makefile
     assert "VVP ?= vvp" in makefile
     assert "q12_mul_tb" in makefile
+    assert "q12_add_tb" in makefile
+    assert "q12_complex_add_tb" in makefile
     assert "instruction_decoder_tb" in makefile
     assert "exactq12_sequencer_tb" in makefile
     assert "-g2012" in makefile
