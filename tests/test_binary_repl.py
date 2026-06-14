@@ -150,6 +150,29 @@ def test_cli_state_init_exports_reset_memh(tmp_path) -> None:
     assert lines[1:] == ["0" * len(lines[0])] * 3
 
 
+def test_cli_state_export_and_dump_roundtrip(tmp_path) -> None:
+    circuit = tmp_path / "bell.q12"
+    state_memh = tmp_path / "bell_state.memh"
+    circuit.write_text("RESET 2\nH q0\nCNOT q0 q1\n", encoding="utf-8")
+
+    export_completed = subprocess.run(
+        [sys.executable, "-m", "exactq12.cli", "state-export", str(circuit), "--out", str(state_memh)],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    assert "wrote 4 amplitudes" in export_completed.stdout
+
+    dump_completed = subprocess.run(
+        [sys.executable, "-m", "exactq12.cli", "state-dump", str(state_memh)],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    assert "|00>" in dump_completed.stdout
+    assert "|11>" in dump_completed.stdout
+
+
 def test_cli_dump_prints_final_state_without_dump_instruction(tmp_path) -> None:
     source = tmp_path / "state.q12"
     source.write_text("RESET 1\nH q0\n", encoding="utf-8")

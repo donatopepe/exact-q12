@@ -2,7 +2,17 @@ import pytest
 
 from exactq12.complex_q12 import CQ12
 from exactq12.q12 import Q12
-from exactq12.rtl_pack import cq12_hex, pack_cq12, pack_q12, reset_statevector_memh, statevector_memh, unpack_cq12, unpack_q12
+from exactq12.rtl_pack import (
+    cq12_hex,
+    pack_cq12,
+    pack_q12,
+    parse_cq12_hex,
+    parse_statevector_memh,
+    reset_statevector_memh,
+    statevector_memh,
+    unpack_cq12,
+    unpack_q12,
+)
 from exactq12.statevector import Statevector
 
 
@@ -54,3 +64,25 @@ def test_statevector_memh_uses_current_amplitudes() -> None:
     state = Statevector.reset(1)
     state.apply_h(0)
     assert statevector_memh(state).splitlines() == [cq12_hex(state.amplitudes[0]), cq12_hex(state.amplitudes[1])]
+
+
+def test_parse_cq12_hex_roundtrip() -> None:
+    value = CQ12(Q12.sqrt2_half(), Q12.sqrt3_half())
+    assert parse_cq12_hex(cq12_hex(value)) == value
+
+
+def test_parse_statevector_memh_roundtrip() -> None:
+    state = Statevector.reset(2)
+    state.apply_h(0)
+    parsed = parse_statevector_memh(statevector_memh(state))
+    assert parsed.num_qubits == 2
+    assert parsed.amplitudes == state.amplitudes
+
+
+def test_parse_statevector_memh_rejects_bad_shape() -> None:
+    with pytest.raises(ValueError, match="empty"):
+        parse_statevector_memh("")
+    with pytest.raises(ValueError, match="power of two"):
+        parse_statevector_memh("0\n0\n0\n")
+    with pytest.raises(ValueError, match="hex digits"):
+        parse_statevector_memh("0\n")

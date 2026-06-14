@@ -32,3 +32,5 @@ jobs:
           exactq12 fpga run bell.bin
           exactq12 fpga run bell.memh
           exactq12 state-init --qubits 2 --out reset2.memh
+          exactq12 state-export examples/bell.q12 --out bell_state.memh
+          exactq12 state-dump bell_state.memh

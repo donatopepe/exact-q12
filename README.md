@@ -96,6 +96,7 @@ Implementato:
 - Export binario `bin` e ROM hex `memh`.
 - `fpga run` accetta stream `.bin` e ROM `.memh`.
 - `state-init` genera memoria iniziale `RESET n` per `statevector_mem.sv`.
+- `state-export` e `state-dump` generano e ispezionano immagini memoria statevector RTL.
 - Utility Python di packing RTL per `Q12` e `CQ12`.
 - Primi moduli SystemVerilog combinatori in `rtl/`.
 - Prime memorie RTL e sequencer fetch/decode/halt in `rtl/`.
@@ -303,6 +304,8 @@ exactq12 export examples/bell.q12 --format memh --out bell.memh
 exactq12 fpga run bell.bin
 exactq12 fpga run bell.memh
 exactq12 state-init --qubits 2 --out reset2.memh
+exactq12 state-export examples/bell.q12 --out bell_state.memh
+exactq12 state-dump bell_state.memh
 ```
 
 `fpga run` in questa fase è una simulazione software del formato istruzioni binarie. Non esegue codice su hardware reale e non contiene SystemVerilog.
@@ -449,6 +452,8 @@ Per inizializzare `statevector_mem.sv` con lo stato `|00...0>`:
 
 ```bash
 exactq12 state-init --qubits 2 --out reset2.memh
+exactq12 state-export examples/bell.q12 --out bell_state.memh
+exactq12 state-dump bell_state.memh
 ```
 
 ### RTL SystemVerilog
@@ -493,6 +498,7 @@ La suite pytest copre:
 - Roundtrip del formato binario e validazione degli opcode.
 - Export `memh` e roundtrip del packing RTL `Q12`/`CQ12`.
 - Export `state-init` per memoria statevector RTL.
+- Roundtrip `state-export`/`state-dump` per immagini memoria RTL.
 - Formule RTL `q12_mul`, `q12_complex_mul`, opcode, decoder, ROM, memoria e riduzione denominatore confrontati con il modello Python.
 - Conservazione esatta della normalizzazione dopo sequenze di gate supportati.
 
@@ -700,6 +706,8 @@ python3 -m exactq12.cli export examples/bell.q12 --format memh --out bell.memh
 python3 -m exactq12.cli fpga run bell.bin
 python3 -m exactq12.cli fpga run bell.memh
 python3 -m exactq12.cli state-init --qubits 2 --out reset2.memh
+python3 -m exactq12.cli state-export examples/bell.q12 --out bell_state.memh
+python3 -m exactq12.cli state-dump bell_state.memh
 ```
 
 Se si modifica `rtl/`, aggiornare anche i test in `tests/test_rtl.py` o aggiungere una simulazione HDL dedicata quando viene introdotta una toolchain.
@@ -822,6 +830,7 @@ Implemented:
 - Binary `bin` and ROM hex `memh` export.
 - `fpga run` accepts `.bin` streams and `.memh` ROM files.
 - `state-init` generates initial `RESET n` memory for `statevector_mem.sv`.
+- `state-export` and `state-dump` generate and inspect RTL statevector memory images.
 - Python RTL packing utilities for `Q12` and `CQ12`.
 - First combinational SystemVerilog modules in `rtl/`.
 - First RTL memories and fetch/decode/halt sequencer in `rtl/`.
@@ -1029,6 +1038,8 @@ exactq12 export examples/bell.q12 --format memh --out bell.memh
 exactq12 fpga run bell.bin
 exactq12 fpga run bell.memh
 exactq12 state-init --qubits 2 --out reset2.memh
+exactq12 state-export examples/bell.q12 --out bell_state.memh
+exactq12 state-dump bell_state.memh
 ```
 
 At this stage, `fpga run` is a software simulation of the binary instruction format. It does not execute on real hardware and does not contain SystemVerilog.
@@ -1175,6 +1186,8 @@ To initialize `statevector_mem.sv` with the `|00...0>` state:
 
 ```bash
 exactq12 state-init --qubits 2 --out reset2.memh
+exactq12 state-export examples/bell.q12 --out bell_state.memh
+exactq12 state-dump bell_state.memh
 ```
 
 ### SystemVerilog RTL
@@ -1218,6 +1231,7 @@ The pytest suite covers:
 - Binary format roundtrip and opcode validation.
 - `memh` export and RTL `Q12`/`CQ12` packing roundtrip.
 - `state-init` export for RTL statevector memory.
+- `state-export`/`state-dump` roundtrip for RTL memory images.
 - RTL formulas for `q12_mul`, `q12_complex_mul`, opcodes, decoder, ROM, memory, and denominator reduction compared against the Python model.
 - Exact normalization preservation after supported gate sequences.
 

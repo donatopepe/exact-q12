@@ -63,9 +63,30 @@ def cq12_hex(value: CQ12, coeff_width: int = 32, exp_width: int = 8) -> str:
     return f"{pack_cq12(value, coeff_width, exp_width):0{hex_digits}x}"
 
 
+def parse_cq12_hex(text: str, coeff_width: int = 32, exp_width: int = 8) -> CQ12:
+    total_width = 2 * ((4 * coeff_width) + exp_width)
+    hex_digits = (total_width + 3) // 4
+    text = text.strip()
+    if len(text) != hex_digits:
+        raise ValueError(f"CQ12 hex value must be {hex_digits} hex digits")
+    return unpack_cq12(int(text, 16), coeff_width, exp_width)
+
+
 def statevector_memh(state: Statevector, coeff_width: int = 32, exp_width: int = 8) -> str:
     return "\n".join(cq12_hex(amplitude, coeff_width, exp_width) for amplitude in state.amplitudes) + "\n"
 
 
 def reset_statevector_memh(num_qubits: int, coeff_width: int = 32, exp_width: int = 8) -> str:
     return statevector_memh(Statevector.reset(num_qubits), coeff_width, exp_width)
+
+
+def parse_statevector_memh(text: str, coeff_width: int = 32, exp_width: int = 8) -> Statevector:
+    lines = [line.split("#", 1)[0].strip() for line in text.splitlines()]
+    lines = [line for line in lines if line]
+    if not lines:
+        raise ValueError("statevector memh is empty")
+    if len(lines) & (len(lines) - 1):
+        raise ValueError("statevector memh line count must be a power of two")
+    num_qubits = len(lines).bit_length() - 1
+    amplitudes = [parse_cq12_hex(line, coeff_width, exp_width) for line in lines]
+    return Statevector(num_qubits, amplitudes)

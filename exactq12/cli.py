@@ -10,7 +10,7 @@ from exactq12.gates import execute
 from exactq12.logging_utils import JsonlLogger
 from exactq12.parser import parse_file
 from exactq12.repl import repl
-from exactq12.rtl_pack import reset_statevector_memh
+from exactq12.rtl_pack import parse_statevector_memh, reset_statevector_memh, statevector_memh
 
 
 def run(path: str, log_path: str | None = None) -> int:
@@ -59,6 +59,20 @@ def state_init(qubits: int, output_path: str) -> int:
     return 0
 
 
+def state_export(path: str, output_path: str) -> int:
+    state, _ = execute(parse_file(path))
+    Path(output_path).write_text(statevector_memh(state), encoding="utf-8")
+    print(f"wrote {len(state.amplitudes)} amplitudes to {output_path}")
+    return 0
+
+
+def state_dump(path: str) -> int:
+    state = parse_statevector_memh(Path(path).read_text(encoding="utf-8"))
+    for line in state.dump_lines():
+        print(line)
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="exactq12")
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -87,6 +101,13 @@ def main(argv: list[str] | None = None) -> int:
     state_init_parser.add_argument("--qubits", type=int, required=True)
     state_init_parser.add_argument("--out", required=True)
 
+    state_export_parser = subparsers.add_parser("state-export")
+    state_export_parser.add_argument("path")
+    state_export_parser.add_argument("--out", required=True)
+
+    state_dump_parser = subparsers.add_parser("state-dump")
+    state_dump_parser.add_argument("path")
+
     fpga_parser = subparsers.add_parser("fpga")
     fpga_subparsers = fpga_parser.add_subparsers(dest="fpga_command", required=True)
     fpga_run_parser = fpga_subparsers.add_parser("run")
@@ -107,6 +128,10 @@ def main(argv: list[str] | None = None) -> int:
         return export(args.path, args.out, args.format)
     if args.command == "state-init":
         return state_init(args.qubits, args.out)
+    if args.command == "state-export":
+        return state_export(args.path, args.out)
+    if args.command == "state-dump":
+        return state_dump(args.path)
     if args.command == "fpga" and args.fpga_command == "run":
         return fpga_run(args.path)
     parser.error(f"unsupported command: {args.command}")
