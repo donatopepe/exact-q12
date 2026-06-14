@@ -63,6 +63,35 @@ def rtl_q12_add_aligned(
     )
 
 
+def rtl_q12_scale_sqrt_half(x: tuple[int, int, int, int, int]) -> tuple[int, int, int, int, int]:
+    a, b, c, d, e = x
+    return 12 * b, 6 * a, 12 * d, 6 * c, e + 1
+
+
+def rtl_hadamard_pair(left: CQ12, right: CQ12) -> tuple[CQ12, CQ12, bool]:
+    real_sum = rtl_q12_add_aligned(
+        (left.real.a, left.real.b, left.real.c, left.real.d, left.real.E),
+        (right.real.a, right.real.b, right.real.c, right.real.d, right.real.E),
+    )
+    imag_sum = rtl_q12_add_aligned(
+        (left.imag.a, left.imag.b, left.imag.c, left.imag.d, left.imag.E),
+        (right.imag.a, right.imag.b, right.imag.c, right.imag.d, right.imag.E),
+    )
+    real_diff = rtl_q12_add_aligned(
+        (left.real.a, left.real.b, left.real.c, left.real.d, left.real.E),
+        (right.real.a, right.real.b, right.real.c, right.real.d, right.real.E),
+        subtract=True,
+    )
+    imag_diff = rtl_q12_add_aligned(
+        (left.imag.a, left.imag.b, left.imag.c, left.imag.d, left.imag.E),
+        (right.imag.a, right.imag.b, right.imag.c, right.imag.d, right.imag.E),
+        subtract=True,
+    )
+    out0 = CQ12(Q12(*rtl_q12_scale_sqrt_half(real_sum[:-1])), Q12(*rtl_q12_scale_sqrt_half(imag_sum[:-1])))
+    out1 = CQ12(Q12(*rtl_q12_scale_sqrt_half(real_diff[:-1])), Q12(*rtl_q12_scale_sqrt_half(imag_diff[:-1])))
+    return out0, out1, real_sum[-1] and imag_sum[-1] and real_diff[-1] and imag_diff[-1]
+
+
 def test_rtl_q12_mul_formula_matches_python_model() -> None:
     cases = [
         ((1, 2, 3, 4), (5, 6, 7, 8)),
@@ -168,6 +197,29 @@ def test_rtl_complex_add_aligned_matches_python_model() -> None:
     assert Q12(*imag[:-1]) == expected.imag
 
 
+def test_rtl_q12_scale_sqrt_half_matches_python_model() -> None:
+    cases = [Q12.one(), Q12(3, -2, 4, -5, 2)]
+    factor = Q12.sqrt2_half()
+
+    for value in cases:
+        scaled = rtl_q12_scale_sqrt_half((value.a, value.b, value.c, value.d, value.E))
+        assert Q12(*scaled) == value * factor
+
+
+def test_rtl_hadamard_pair_matches_python_model() -> None:
+    cases = [
+        (CQ12.one(), CQ12.zero()),
+        (CQ12(Q12(3, -2, 4, -5, 1), Q12(1, 2, 3, 4, 2)), CQ12(Q12(-1, 7, -3, 2, 3), Q12(5, -6, 7, -8, 1))),
+    ]
+    factor = CQ12(Q12.sqrt2_half(), Q12.zero())
+
+    for left, right in cases:
+        out0, out1, valid = rtl_hadamard_pair(left, right)
+        assert valid is True
+        assert out0 == (left + right) * factor
+        assert out1 == (left - right) * factor
+
+
 def test_rtl_files_contain_expected_modules_and_formulas() -> None:
     q12_mul = (ROOT / "rtl" / "q12_mul.sv").read_text(encoding="utf-8")
     complex_mul = (ROOT / "rtl" / "q12_complex_mul.sv").read_text(encoding="utf-8")
@@ -175,6 +227,9 @@ def test_rtl_files_contain_expected_modules_and_formulas() -> None:
     complex_add = (ROOT / "rtl" / "q12_complex_add.sv").read_text(encoding="utf-8")
     q12_add_aligned = (ROOT / "rtl" / "q12_add_aligned.sv").read_text(encoding="utf-8")
     complex_add_aligned = (ROOT / "rtl" / "q12_complex_add_aligned.sv").read_text(encoding="utf-8")
+    q12_scale_sqrt_half = (ROOT / "rtl" / "q12_scale_sqrt_half.sv").read_text(encoding="utf-8")
+    complex_scale_sqrt_half = (ROOT / "rtl" / "q12_complex_scale_sqrt_half.sv").read_text(encoding="utf-8")
+    hadamard_pair = (ROOT / "rtl" / "hadamard_pair.sv").read_text(encoding="utf-8")
 
     assert "module q12_mul" in q12_mul
     assert "A = (a * e) + 2 * (b * f) + 3 * (c * g) + 6 * (d * h);" in q12_mul
@@ -205,6 +260,19 @@ def test_rtl_files_contain_expected_modules_and_formulas() -> None:
     assert "module q12_complex_add_aligned" in complex_add_aligned
     assert complex_add_aligned.count("q12_add_aligned #(.W(W), .EW(EW), .OUT_W(OUT_W), .MAX_SHIFT(MAX_SHIFT))") == 2
     assert "valid = real_valid && imag_valid;" in complex_add_aligned
+
+    assert "module q12_scale_sqrt_half" in q12_scale_sqrt_half
+    assert "a_out = 12 * b_in;" in q12_scale_sqrt_half
+    assert "b_out = 6 * a_in;" in q12_scale_sqrt_half
+    assert "e_out = e_in + 1'b1;" in q12_scale_sqrt_half
+
+    assert "module q12_complex_scale_sqrt_half" in complex_scale_sqrt_half
+    assert complex_scale_sqrt_half.count("q12_scale_sqrt_half #(.W(W), .EW(EW), .OUT_W(OUT_W))") == 2
+
+    assert "module hadamard_pair" in hadamard_pair
+    assert hadamard_pair.count("q12_complex_add_aligned #(.W(W), .EW(EW), .OUT_W(ADD_W), .MAX_SHIFT(MAX_SHIFT))") == 2
+    assert hadamard_pair.count("q12_complex_scale_sqrt_half #(.W(ADD_W), .EW(EW), .OUT_W(OUT_W))") == 2
+    assert "valid = sum_valid && diff_valid;" in hadamard_pair
 
 
 def test_rtl_opcode_package_matches_python_binary_encoder() -> None:
@@ -327,6 +395,8 @@ def test_rtl_testbenches_are_self_checking() -> None:
         ROOT / "rtl" / "tb" / "q12_add_aligned_tb.sv",
         ROOT / "rtl" / "tb" / "q12_complex_add_tb.sv",
         ROOT / "rtl" / "tb" / "q12_complex_add_aligned_tb.sv",
+        ROOT / "rtl" / "tb" / "q12_scale_sqrt_half_tb.sv",
+        ROOT / "rtl" / "tb" / "hadamard_pair_tb.sv",
         ROOT / "rtl" / "tb" / "instruction_decoder_tb.sv",
         ROOT / "rtl" / "tb" / "exactq12_sequencer_tb.sv",
     ]
@@ -365,6 +435,8 @@ def test_rtl_makefile_runs_optional_iverilog_sims() -> None:
     assert "q12_add_aligned_tb" in makefile
     assert "q12_complex_add_tb" in makefile
     assert "q12_complex_add_aligned_tb" in makefile
+    assert "q12_scale_sqrt_half_tb" in makefile
+    assert "hadamard_pair_tb" in makefile
     assert "instruction_decoder_tb" in makefile
     assert "exactq12_sequencer_tb" in makefile
     assert "-g2012" in makefile

@@ -14,6 +14,9 @@ Current modules:
 - `q12_complex_add.sv`: combinational add/subtract for `CQ12` values using two `q12_add` instances.
 - `q12_add_aligned.sv`: combinational `Q12` add/subtract with limited scaling to `12^max(E0,E1)`.
 - `q12_complex_add_aligned.sv`: combinational `CQ12` add/subtract with independent real and imaginary exponent alignment.
+- `q12_scale_sqrt_half.sv`: exact multiply by `√2/2 = 6√2/12`.
+- `q12_complex_scale_sqrt_half.sv`: `CQ12` scaling by `√2/2`.
+- `hadamard_pair.sv`: combinational Hadamard butterfly over two packed-amplitude payloads.
 - `q12_mul.sv`: combinational multiplication for `a + b√2 + c√3 + d√6` numerators.
 - `q12_complex_mul.sv`: combinational complex multiplication using four `q12_mul` instances.
 - `q12_den_reduce.sv`: one-step denominator reduction by base 12.

@@ -103,6 +103,7 @@ Implementato:
 - Utility Python di packing RTL per `Q12` e `CQ12`.
 - Primi moduli SystemVerilog combinatori in `rtl/`.
 - Blocchi RTL add/sub per `Q12` e `CQ12`, inclusa variante con allineamento limitato degli esponenti.
+- Primi blocchi RTL per datapath Hadamard su coppie di ampiezze.
 - Prime memorie RTL e sequencer fetch/decode/halt in `rtl/`.
 - Top-level RTL simulativo che collega ROM, sequencer e memoria statevector.
 - Testbench SystemVerilog opzionali eseguibili con Icarus Verilog.
@@ -479,6 +480,9 @@ La Fase 5 è iniziata con i primi blocchi combinatori in `rtl/`:
 - `rtl/q12_complex_add.sv`: somma/sottrazione combinatoria per `CQ12` con due istanze `q12_add`.
 - `rtl/q12_add_aligned.sv`: somma/sottrazione `Q12` che scala al denominatore comune `12^max(E0,E1)` fino a `MAX_SHIFT`.
 - `rtl/q12_complex_add_aligned.sv`: somma/sottrazione `CQ12` con allineamento indipendente di parte reale e immaginaria.
+- `rtl/q12_scale_sqrt_half.sv`: moltiplicazione esatta per `√2/2 = 6√2/12`.
+- `rtl/q12_complex_scale_sqrt_half.sv`: scaling `CQ12` per `√2/2`.
+- `rtl/hadamard_pair.sv`: butterfly combinatorio `(a+b)/√2`, `(a-b)/√2` per due ampiezze.
 - `rtl/bell.memh`: programma Bell in formato ROM hex.
 - `rtl/tb/`: testbench SystemVerilog auto-verificanti opzionali.
 - `rtl/Makefile`: target opzionali per simulazione locale con Icarus Verilog.
@@ -500,7 +504,7 @@ Simulazione HDL locale opzionale:
 make -C rtl sim
 ```
 
-Richiede `iverilog` e `vvp` installati localmente. Non è ancora richiesta dalla suite pytest o dalla CI.
+Richiede `iverilog` e `vvp` installati localmente. Non è richiesta dalla suite pytest locale.
 
 La simulazione RTL è però eseguita in un workflow GitHub Actions separato (`rtl-sim.yml`) che installa Icarus Verilog su Ubuntu e lancia `make -C rtl sim`.
 
@@ -524,6 +528,7 @@ La suite pytest copre:
 - Roundtrip `state-export`/`state-dump` per immagini memoria RTL.
 - Formule RTL `q12_mul`, `q12_complex_mul`, opcode, decoder, ROM, memoria e riduzione denominatore confrontati con il modello Python.
 - Formule RTL add/sub `q12_add`, `q12_complex_add` e varianti aligned confrontate con il modello Python.
+- Formule RTL per scaling `√2/2` e butterfly Hadamard confrontate con il modello Python.
 - Wiring statico del top-level RTL verificato dai test.
 - Presenza di testbench SystemVerilog auto-verificanti e Makefile RTL.
 - Conservazione esatta della normalizzazione dopo sequenze di gate supportati.
@@ -664,15 +669,18 @@ exact-q12/
 │   ├── exactq12_sequencer.sv
 │   ├── exactq12_top.sv
 │   ├── exactq12_pkg.sv
+│   ├── hadamard_pair.sv
 │   ├── instruction_decoder.sv
 │   ├── program_rom.sv
 │   ├── q12_add.sv
 │   ├── q12_add_aligned.sv
 │   ├── q12_complex_add.sv
 │   ├── q12_complex_add_aligned.sv
+│   ├── q12_complex_scale_sqrt_half.sv
 │   ├── q12_complex_mul.sv
 │   ├── q12_den_reduce.sv
 │   ├── q12_mul.sv
+│   ├── q12_scale_sqrt_half.sv
 │   ├── statevector_mem.sv
 │   └── tb/
 ├── PROJECT_CONTEXT_EXACT_Q12.md
@@ -709,7 +717,7 @@ Fase 4, iniziata:
 
 Fase 5, iniziata:
 
-- Moduli SystemVerilog combinatori `q12_add`, `q12_add_aligned`, `q12_complex_add`, `q12_complex_add_aligned`, `q12_mul`, `q12_complex_mul`, `q12_den_reduce` e decoder istruzioni.
+- Moduli SystemVerilog combinatori `q12_add`, `q12_add_aligned`, `q12_complex_add`, `q12_complex_add_aligned`, `q12_scale_sqrt_half`, `q12_complex_scale_sqrt_half`, `hadamard_pair`, `q12_mul`, `q12_complex_mul`, `q12_den_reduce` e decoder istruzioni.
 - Memorie RTL iniziali e sequencer fetch/decode/halt.
 - Top-level RTL simulativo non board-specific.
 - Testbench SystemVerilog opzionali per Icarus Verilog.
@@ -870,6 +878,7 @@ Implemented:
 - Python RTL packing utilities for `Q12` and `CQ12`.
 - First combinational SystemVerilog modules in `rtl/`.
 - RTL add/sub blocks for `Q12` and `CQ12`, including a variant with limited exponent alignment.
+- First RTL Hadamard datapath blocks over pairs of amplitudes.
 - First RTL memories and fetch/decode/halt sequencer in `rtl/`.
 - Simulation-oriented RTL top-level wiring ROM, sequencer, and statevector memory.
 - Optional SystemVerilog testbenches runnable with Icarus Verilog.
@@ -1246,6 +1255,9 @@ Phase 5 has started with the first combinational blocks in `rtl/`:
 - `rtl/q12_complex_add.sv`: combinational add/subtract for `CQ12` values using two `q12_add` instances.
 - `rtl/q12_add_aligned.sv`: `Q12` add/subtract that scales to the common denominator `12^max(E0,E1)` up to `MAX_SHIFT`.
 - `rtl/q12_complex_add_aligned.sv`: `CQ12` add/subtract with independent real and imaginary exponent alignment.
+- `rtl/q12_scale_sqrt_half.sv`: exact multiply by `√2/2 = 6√2/12`.
+- `rtl/q12_complex_scale_sqrt_half.sv`: `CQ12` scaling by `√2/2`.
+- `rtl/hadamard_pair.sv`: combinational butterfly `(a+b)/√2`, `(a-b)/√2` over two amplitudes.
 - `rtl/bell.memh`: Bell program in ROM hex format.
 - `rtl/tb/`: optional self-checking SystemVerilog testbenches.
 - `rtl/Makefile`: optional local Icarus Verilog simulation targets.
@@ -1266,7 +1278,7 @@ Optional local HDL simulation:
 make -C rtl sim
 ```
 
-This requires `iverilog` and `vvp` to be installed locally. It is not required by the pytest suite or CI yet.
+This requires `iverilog` and `vvp` to be installed locally. It is not required by the local pytest suite.
 
 RTL simulation is also run by a separate GitHub Actions workflow (`rtl-sim.yml`) that installs Icarus Verilog on Ubuntu and runs `make -C rtl sim`.
 
@@ -1290,6 +1302,7 @@ The pytest suite covers:
 - `state-export`/`state-dump` roundtrip for RTL memory images.
 - RTL formulas for `q12_mul`, `q12_complex_mul`, opcodes, decoder, ROM, memory, and denominator reduction compared against the Python model.
 - RTL add/sub formulas for `q12_add`, `q12_complex_add`, and aligned variants compared against the Python model.
+- RTL formulas for `√2/2` scaling and Hadamard butterfly compared against the Python model.
 - Static RTL top-level wiring verified by tests.
 - Presence of self-checking SystemVerilog testbenches and RTL Makefile.
 - Exact normalization preservation after supported gate sequences.
@@ -1430,15 +1443,18 @@ exact-q12/
 │   ├── exactq12_sequencer.sv
 │   ├── exactq12_top.sv
 │   ├── exactq12_pkg.sv
+│   ├── hadamard_pair.sv
 │   ├── instruction_decoder.sv
 │   ├── program_rom.sv
 │   ├── q12_add.sv
 │   ├── q12_add_aligned.sv
 │   ├── q12_complex_add.sv
 │   ├── q12_complex_add_aligned.sv
+│   ├── q12_complex_scale_sqrt_half.sv
 │   ├── q12_complex_mul.sv
 │   ├── q12_den_reduce.sv
 │   ├── q12_mul.sv
+│   ├── q12_scale_sqrt_half.sv
 │   ├── statevector_mem.sv
 │   └── tb/
 ├── PROJECT_CONTEXT_EXACT_Q12.md
@@ -1475,7 +1491,7 @@ Phase 4, started:
 
 Phase 5, started:
 
-- Combinational SystemVerilog modules `q12_add`, `q12_add_aligned`, `q12_complex_add`, `q12_complex_add_aligned`, `q12_mul`, `q12_complex_mul`, `q12_den_reduce`, and instruction decoder.
+- Combinational SystemVerilog modules `q12_add`, `q12_add_aligned`, `q12_complex_add`, `q12_complex_add_aligned`, `q12_scale_sqrt_half`, `q12_complex_scale_sqrt_half`, `hadamard_pair`, `q12_mul`, `q12_complex_mul`, `q12_den_reduce`, and instruction decoder.
 - Initial RTL memories and fetch/decode/halt sequencer.
 - Non-board-specific simulation RTL top-level.
 - Optional SystemVerilog testbenches for Icarus Verilog.
