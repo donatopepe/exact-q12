@@ -20,6 +20,7 @@ Current modules:
 - `hadamard_address_pair.sv`: address pair generator for Hadamard traversal using `q0` as the most-significant qubit.
 - `hadamard_pair.sv`: combinational Hadamard butterfly over two `CQ12` amplitudes in unpacked fields.
 - `hadamard_pair_packed.sv`: wrapper around `hadamard_pair` for packed `CQ12` memory payloads.
+- `hadamard_pair_repack.sv`: wide-to-memory payload repacker with signed coefficient fit checks.
 - `hadamard_pair_step.sv`: combinational address/read-payload/write-payload step for one Hadamard pair.
 - `q12_mul.sv`: combinational multiplication for `a + b√2 + c√3 + d√6` numerators.
 - `q12_complex_mul.sv`: combinational complex multiplication using four `q12_mul` instances.

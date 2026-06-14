@@ -264,6 +264,7 @@ def test_rtl_files_contain_expected_modules_and_formulas() -> None:
     hadamard_pair_packed = (ROOT / "rtl" / "hadamard_pair_packed.sv").read_text(encoding="utf-8")
     hadamard_address_pair = (ROOT / "rtl" / "hadamard_address_pair.sv").read_text(encoding="utf-8")
     hadamard_pair_step = (ROOT / "rtl" / "hadamard_pair_step.sv").read_text(encoding="utf-8")
+    hadamard_pair_repack = (ROOT / "rtl" / "hadamard_pair_repack.sv").read_text(encoding="utf-8")
 
     assert "module q12_mul" in q12_mul
     assert "A = (a * e) + 2 * (b * f) + 3 * (c * g) + 6 * (d * h);" in q12_mul
@@ -328,6 +329,14 @@ def test_rtl_files_contain_expected_modules_and_formulas() -> None:
     assert ".amp_in0(amp_rdata0)" in hadamard_pair_step
     assert ".amp_out0(amp_wdata0)" in hadamard_pair_step
     assert "valid = address_valid && datapath_valid;" in hadamard_pair_step
+
+    assert "module hadamard_pair_repack" in hadamard_pair_repack
+    assert "parameter int IN_COEFF_W = 68" in hadamard_pair_repack
+    assert "parameter int OUT_COEFF_W = 32" in hadamard_pair_repack
+    assert "function automatic logic coeff_fits" in hadamard_pair_repack
+    assert "sign = value[OUT_COEFF_W-1];" in hadamard_pair_repack
+    assert "valid = fit0 && fit1;" in hadamard_pair_repack
+    assert "amp_out0 = {c0[0][OUT_COEFF_W-1:0]" in hadamard_pair_repack
 
 
 def test_rtl_opcode_package_matches_python_binary_encoder() -> None:
@@ -464,6 +473,7 @@ def test_rtl_testbenches_are_self_checking() -> None:
         ROOT / "rtl" / "tb" / "hadamard_pair_packed_tb.sv",
         ROOT / "rtl" / "tb" / "hadamard_address_pair_tb.sv",
         ROOT / "rtl" / "tb" / "hadamard_pair_step_tb.sv",
+        ROOT / "rtl" / "tb" / "hadamard_pair_repack_tb.sv",
         ROOT / "rtl" / "tb" / "statevector_pair_mem_tb.sv",
         ROOT / "rtl" / "tb" / "instruction_decoder_tb.sv",
         ROOT / "rtl" / "tb" / "exactq12_sequencer_tb.sv",
@@ -508,6 +518,7 @@ def test_rtl_makefile_runs_optional_iverilog_sims() -> None:
     assert "hadamard_pair_packed_tb" in makefile
     assert "hadamard_address_pair_tb" in makefile
     assert "hadamard_pair_step_tb" in makefile
+    assert "hadamard_pair_repack_tb" in makefile
     assert "statevector_pair_mem_tb" in makefile
     assert "instruction_decoder_tb" in makefile
     assert "exactq12_sequencer_tb" in makefile
