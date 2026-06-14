@@ -230,6 +230,7 @@ def test_rtl_files_contain_expected_modules_and_formulas() -> None:
     q12_scale_sqrt_half = (ROOT / "rtl" / "q12_scale_sqrt_half.sv").read_text(encoding="utf-8")
     complex_scale_sqrt_half = (ROOT / "rtl" / "q12_complex_scale_sqrt_half.sv").read_text(encoding="utf-8")
     hadamard_pair = (ROOT / "rtl" / "hadamard_pair.sv").read_text(encoding="utf-8")
+    hadamard_pair_packed = (ROOT / "rtl" / "hadamard_pair_packed.sv").read_text(encoding="utf-8")
 
     assert "module q12_mul" in q12_mul
     assert "A = (a * e) + 2 * (b * f) + 3 * (c * g) + 6 * (d * h);" in q12_mul
@@ -273,6 +274,14 @@ def test_rtl_files_contain_expected_modules_and_formulas() -> None:
     assert hadamard_pair.count("q12_complex_add_aligned #(.W(W), .EW(EW), .OUT_W(ADD_W), .MAX_SHIFT(MAX_SHIFT))") == 2
     assert hadamard_pair.count("q12_complex_scale_sqrt_half #(.W(ADD_W), .EW(EW), .OUT_W(OUT_W))") == 2
     assert "valid = sum_valid && diff_valid;" in hadamard_pair
+
+    assert "module hadamard_pair_packed" in hadamard_pair_packed
+    assert "parameter int AMP_W = (8 * COEFF_W) + (2 * EXP_W)" in hadamard_pair_packed
+    assert "parameter int OUT_AMP_W = (8 * OUT_COEFF_W) + (2 * EXP_W)" in hadamard_pair_packed
+    assert "ar0 = amp_in0[AMP_W-1 -: COEFF_W];" in hadamard_pair_packed
+    assert "ei0 = amp_in0[EXP_W-1:0];" in hadamard_pair_packed
+    assert "amp_out0 = {ar_out0, br_out0, cr_out0, dr_out0, er_out0, ai_out0, bi_out0, ci_out0, di_out0, ei_out0};" in hadamard_pair_packed
+    assert "hadamard_pair #(" in hadamard_pair_packed
 
 
 def test_rtl_opcode_package_matches_python_binary_encoder() -> None:
@@ -397,6 +406,7 @@ def test_rtl_testbenches_are_self_checking() -> None:
         ROOT / "rtl" / "tb" / "q12_complex_add_aligned_tb.sv",
         ROOT / "rtl" / "tb" / "q12_scale_sqrt_half_tb.sv",
         ROOT / "rtl" / "tb" / "hadamard_pair_tb.sv",
+        ROOT / "rtl" / "tb" / "hadamard_pair_packed_tb.sv",
         ROOT / "rtl" / "tb" / "instruction_decoder_tb.sv",
         ROOT / "rtl" / "tb" / "exactq12_sequencer_tb.sv",
     ]
@@ -437,6 +447,7 @@ def test_rtl_makefile_runs_optional_iverilog_sims() -> None:
     assert "q12_complex_add_aligned_tb" in makefile
     assert "q12_scale_sqrt_half_tb" in makefile
     assert "hadamard_pair_tb" in makefile
+    assert "hadamard_pair_packed_tb" in makefile
     assert "instruction_decoder_tb" in makefile
     assert "exactq12_sequencer_tb" in makefile
     assert "-g2012" in makefile
