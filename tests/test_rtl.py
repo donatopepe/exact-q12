@@ -192,6 +192,24 @@ def test_rtl_testbenches_are_self_checking() -> None:
         assert "passed" in text
 
 
+def test_q12_mul_testbench_expected_values_match_model() -> None:
+    testbench = (ROOT / "rtl" / "tb" / "q12_mul_tb.sv").read_text(encoding="utf-8")
+
+    first = rtl_q12_mul((1, 2, 3, 4), (5, 6, 7, 8))
+    signed = rtl_q12_mul((-3, 0, 2, -1), (4, -5, 0, 6))
+
+    assert first == (284, 172, 102, 60)
+    assert signed == (-48, 51, 18, -32)
+    assert "A !== 68'sd284" in testbench
+    assert "B !== 68'sd172" in testbench
+    assert "C !== 68'sd102" in testbench
+    assert "D !== 68'sd60" in testbench
+    assert "A !== -68'sd48" in testbench
+    assert "B !== 68'sd51" in testbench
+    assert "C !== 68'sd18" in testbench
+    assert "D !== -68'sd32" in testbench
+
+
 def test_rtl_makefile_runs_optional_iverilog_sims() -> None:
     makefile = (ROOT / "rtl" / "Makefile").read_text(encoding="utf-8")
 

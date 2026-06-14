@@ -44,9 +44,9 @@ module q12_mul_tb;
         h = 32'sd6;
         #1;
         if (A !== -68'sd48) $fatal(1, "A signed mismatch: %0d", A);
-        if (B !== 68'sd18) $fatal(1, "B signed mismatch: %0d", B);
-        if (C !== 68'sd2) $fatal(1, "C signed mismatch: %0d", C);
-        if (D !== -68'sd19) $fatal(1, "D signed mismatch: %0d", D);
+        if (B !== 68'sd51) $fatal(1, "B signed mismatch: %0d", B);
+        if (C !== 68'sd18) $fatal(1, "C signed mismatch: %0d", C);
+        if (D !== -68'sd32) $fatal(1, "D signed mismatch: %0d", D);
 
         $display("q12_mul_tb passed");
         $finish;
