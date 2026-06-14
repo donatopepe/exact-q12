@@ -263,6 +263,7 @@ def test_rtl_files_contain_expected_modules_and_formulas() -> None:
     hadamard_pair = (ROOT / "rtl" / "hadamard_pair.sv").read_text(encoding="utf-8")
     hadamard_pair_packed = (ROOT / "rtl" / "hadamard_pair_packed.sv").read_text(encoding="utf-8")
     hadamard_address_pair = (ROOT / "rtl" / "hadamard_address_pair.sv").read_text(encoding="utf-8")
+    hadamard_pair_step = (ROOT / "rtl" / "hadamard_pair_step.sv").read_text(encoding="utf-8")
 
     assert "module q12_mul" in q12_mul
     assert "A = (a * e) + 2 * (b * f) + 3 * (c * g) + 6 * (d * h);" in q12_mul
@@ -320,6 +321,13 @@ def test_rtl_files_contain_expected_modules_and_formulas() -> None:
     assert "lower_bits = pair_index & lower_mask;" in hadamard_address_pair
     assert "upper_bits = (pair_index & ~lower_mask) << 1;" in hadamard_address_pair
     assert "addr1 = addr0 | target_mask;" in hadamard_address_pair
+
+    assert "module hadamard_pair_step" in hadamard_pair_step
+    assert "hadamard_address_pair #(.ADDR_W(ADDR_W), .QUBIT_W(QUBIT_W))" in hadamard_pair_step
+    assert "hadamard_pair_packed #(" in hadamard_pair_step
+    assert ".amp_in0(amp_rdata0)" in hadamard_pair_step
+    assert ".amp_out0(amp_wdata0)" in hadamard_pair_step
+    assert "valid = address_valid && datapath_valid;" in hadamard_pair_step
 
 
 def test_rtl_opcode_package_matches_python_binary_encoder() -> None:
@@ -446,6 +454,7 @@ def test_rtl_testbenches_are_self_checking() -> None:
         ROOT / "rtl" / "tb" / "hadamard_pair_tb.sv",
         ROOT / "rtl" / "tb" / "hadamard_pair_packed_tb.sv",
         ROOT / "rtl" / "tb" / "hadamard_address_pair_tb.sv",
+        ROOT / "rtl" / "tb" / "hadamard_pair_step_tb.sv",
         ROOT / "rtl" / "tb" / "instruction_decoder_tb.sv",
         ROOT / "rtl" / "tb" / "exactq12_sequencer_tb.sv",
     ]
@@ -488,6 +497,7 @@ def test_rtl_makefile_runs_optional_iverilog_sims() -> None:
     assert "hadamard_pair_tb" in makefile
     assert "hadamard_pair_packed_tb" in makefile
     assert "hadamard_address_pair_tb" in makefile
+    assert "hadamard_pair_step_tb" in makefile
     assert "instruction_decoder_tb" in makefile
     assert "exactq12_sequencer_tb" in makefile
     assert "-g2012" in makefile
