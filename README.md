@@ -100,6 +100,7 @@ Implementato:
 - Utility Python di packing RTL per `Q12` e `CQ12`.
 - Primi moduli SystemVerilog combinatori in `rtl/`.
 - Prime memorie RTL e sequencer fetch/decode/halt in `rtl/`.
+- Top-level RTL simulativo che collega ROM, sequencer e memoria statevector.
 - Esempi `.q12`.
 - Test pytest per aritmetica, numeri complessi, gate, parser, CLI, benchmark e circuiti obbligatori.
 
@@ -468,6 +469,7 @@ La Fase 5 è iniziata con i primi blocchi combinatori in `rtl/`:
 - `rtl/program_rom.sv`: ROM generica per istruzioni a 24 bit caricata con `$readmemh`.
 - `rtl/statevector_mem.sv`: memoria sincrona per ampiezze `CQ12` impacchettate.
 - `rtl/exactq12_sequencer.sv`: scheletro fetch/decode/halt.
+- `rtl/exactq12_top.sv`: shell simulativa che collega ROM, sequencer e memoria statevector.
 - `rtl/bell.memh`: programma Bell in formato ROM hex.
 - `exactq12/rtl_pack.py`: packing/unpacking Python di `Q12` e `CQ12` nel layout usato dalla memoria RTL.
 
@@ -479,7 +481,7 @@ Questi moduli sono volutamente piccoli e verificabili. Non implementano ancora:
 - top-level Gowin/Tang Nano 20K;
 - file constraint o progetto EDA.
 
-Il sequencer RTL attuale decodifica istruzioni e si ferma su `DUMP` o opcode non valido; non applica ancora gate alla memoria statevector. La verifica attuale è fatta con test Python che confrontano formule, opcode, ROM e riduzione attesa contro il modello Python esatto. Questo non sostituisce una simulazione SystemVerilog con Verilator/Icarus/Gowin, ma impedisce divergenze immediate tra specifica e RTL iniziale.
+Il sequencer RTL attuale decodifica istruzioni e si ferma su `DUMP` o opcode non valido; il top-level collega i blocchi ma non applica ancora gate alla memoria statevector. La verifica attuale è fatta con test Python che confrontano formule, opcode, ROM e riduzione attesa contro il modello Python esatto. Questo non sostituisce una simulazione SystemVerilog con Verilator/Icarus/Gowin, ma impedisce divergenze immediate tra specifica e RTL iniziale.
 
 ### Batteria di test
 
@@ -500,6 +502,7 @@ La suite pytest copre:
 - Export `state-init` per memoria statevector RTL.
 - Roundtrip `state-export`/`state-dump` per immagini memoria RTL.
 - Formule RTL `q12_mul`, `q12_complex_mul`, opcode, decoder, ROM, memoria e riduzione denominatore confrontati con il modello Python.
+- Wiring statico del top-level RTL verificato dai test.
 - Conservazione esatta della normalizzazione dopo sequenze di gate supportati.
 
 Quando si aggiunge un gate, il minimo richiesto è aggiungere un test di aritmetica della fase, un test sullo statevector e un test circuito end-to-end.
@@ -632,8 +635,10 @@ exact-q12/
 │   └── test_q12.py
 ├── rtl/
 │   ├── README.md
+│   ├── README_TOP.md
 │   ├── bell.memh
 │   ├── exactq12_sequencer.sv
+│   ├── exactq12_top.sv
 │   ├── exactq12_pkg.sv
 │   ├── instruction_decoder.sv
 │   ├── program_rom.sv
@@ -677,6 +682,7 @@ Fase 5, iniziata:
 
 - Moduli SystemVerilog combinatori `q12_mul`, `q12_complex_mul`, `q12_den_reduce` e decoder istruzioni.
 - Memorie RTL iniziali e sequencer fetch/decode/halt.
+- Top-level RTL simulativo non board-specific.
 - Futuro: esecuzione gate sul datapath statevector, UART debug, top-level Tang Nano 20K.
 
 Fase 6, futura:
@@ -834,6 +840,7 @@ Implemented:
 - Python RTL packing utilities for `Q12` and `CQ12`.
 - First combinational SystemVerilog modules in `rtl/`.
 - First RTL memories and fetch/decode/halt sequencer in `rtl/`.
+- Simulation-oriented RTL top-level wiring ROM, sequencer, and statevector memory.
 - `.q12` examples.
 - Pytest tests for arithmetic, complex numbers, gates, parser, CLI, benchmark, and required circuits.
 
@@ -1202,6 +1209,7 @@ Phase 5 has started with the first combinational blocks in `rtl/`:
 - `rtl/program_rom.sv`: generic 24-bit instruction ROM loaded with `$readmemh`.
 - `rtl/statevector_mem.sv`: synchronous memory for packed `CQ12` amplitudes.
 - `rtl/exactq12_sequencer.sv`: fetch/decode/halt skeleton.
+- `rtl/exactq12_top.sv`: simulation shell wiring ROM, sequencer, and statevector memory.
 - `rtl/bell.memh`: Bell program in ROM hex format.
 - `exactq12/rtl_pack.py`: Python packing/unpacking for `Q12` and `CQ12` using the RTL memory layout.
 
@@ -1212,7 +1220,7 @@ These modules are intentionally small and easy to inspect. They do not yet imple
 - Gowin/Tang Nano 20K top-level;
 - constraint files or EDA project files.
 
-The current RTL sequencer decodes instructions and halts on `DUMP` or invalid opcodes; it does not yet apply gates to statevector memory. Current verification uses Python tests that compare formulas, opcodes, ROM contents, and expected reduction behavior against the exact Python model. This does not replace SystemVerilog simulation with Verilator/Icarus/Gowin, but it prevents immediate divergence between the specification and the initial RTL.
+The current RTL sequencer decodes instructions and halts on `DUMP` or invalid opcodes; the top-level wires blocks together but does not yet apply gates to statevector memory. Current verification uses Python tests that compare formulas, opcodes, ROM contents, and expected reduction behavior against the exact Python model. This does not replace SystemVerilog simulation with Verilator/Icarus/Gowin, but it prevents immediate divergence between the specification and the initial RTL.
 
 ### Test Battery
 
@@ -1233,6 +1241,7 @@ The pytest suite covers:
 - `state-init` export for RTL statevector memory.
 - `state-export`/`state-dump` roundtrip for RTL memory images.
 - RTL formulas for `q12_mul`, `q12_complex_mul`, opcodes, decoder, ROM, memory, and denominator reduction compared against the Python model.
+- Static RTL top-level wiring verified by tests.
 - Exact normalization preservation after supported gate sequences.
 
 When a gate is added, the minimum expected coverage is an arithmetic test for its phase, a statevector test, and an end-to-end circuit test.
@@ -1365,8 +1374,10 @@ exact-q12/
 │   └── test_q12.py
 ├── rtl/
 │   ├── README.md
+│   ├── README_TOP.md
 │   ├── bell.memh
 │   ├── exactq12_sequencer.sv
+│   ├── exactq12_top.sv
 │   ├── exactq12_pkg.sv
 │   ├── instruction_decoder.sv
 │   ├── program_rom.sv
@@ -1410,6 +1421,7 @@ Phase 5, started:
 
 - Combinational SystemVerilog modules `q12_mul`, `q12_complex_mul`, `q12_den_reduce`, and instruction decoder.
 - Initial RTL memories and fetch/decode/halt sequencer.
+- Non-board-specific simulation RTL top-level.
 - Future: gate execution over the statevector datapath, UART debug, Tang Nano 20K top-level.
 
 Phase 6, future:

@@ -154,3 +154,26 @@ def test_rtl_sequencer_decodes_and_halts_on_dump_or_invalid() -> None:
     assert "if (!decoder_valid)" in sequencer
     assert "opcode == OP_DUMP" in sequencer
     assert "pc <= pc + 1'b1;" in sequencer
+
+
+def test_rtl_top_wires_rom_sequencer_and_state_memory() -> None:
+    top = (ROOT / "rtl" / "exactq12_top.sv").read_text(encoding="utf-8")
+
+    assert "module exactq12_top" in top
+    assert "parameter string PROGRAM_INIT_FILE = \"bell.memh\"" in top
+    assert "program_rom #(" in top
+    assert "exactq12_sequencer #(" in top
+    assert "statevector_mem #(" in top
+    assert ".addr(pc)" in top
+    assert ".instr(instr)" in top
+    assert ".state_rdata" not in top
+    assert ".rdata(state_rdata)" in top
+    assert ".we(1'b0)" in top
+
+
+def test_rtl_top_notes_document_current_limitations() -> None:
+    notes = (ROOT / "rtl" / "README_TOP.md").read_text(encoding="utf-8")
+
+    assert "simulation-oriented integration shell" in notes
+    assert "gate execution is not connected" in notes
+    assert "not a Tang Nano 20K top-level" in notes
