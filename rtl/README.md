@@ -22,6 +22,7 @@ Current modules:
 - `hadamard_pair_packed.sv`: wrapper around `hadamard_pair` for packed `CQ12` memory payloads.
 - `hadamard_pair_repack.sv`: wide-to-memory payload repacker with signed coefficient fit checks.
 - `hadamard_pair_step.sv`: combinational address/read-payload/write-payload step for one Hadamard pair.
+- `hadamard_pair_writeback_step.sv`: Hadamard pair step with writeback payloads repacked to memory width.
 - `q12_mul.sv`: combinational multiplication for `a + b√2 + c√3 + d√6` numerators.
 - `q12_complex_mul.sv`: combinational complex multiplication using four `q12_mul` instances.
 - `q12_den_reduce.sv`: one-step denominator reduction by base 12.
