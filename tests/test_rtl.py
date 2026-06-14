@@ -92,6 +92,15 @@ def rtl_hadamard_pair(left: CQ12, right: CQ12) -> tuple[CQ12, CQ12, bool]:
     return out0, out1, real_sum[-1] and imag_sum[-1] and real_diff[-1] and imag_diff[-1]
 
 
+def rtl_hadamard_address_pair(num_qubits: int, pair_index: int, target_qubit: int) -> tuple[int, int, bool]:
+    if target_qubit < 0 or target_qubit >= num_qubits:
+        return 0, 0, False
+    target_bit = num_qubits - 1 - target_qubit
+    lower_mask = (1 << target_bit) - 1
+    addr0 = ((pair_index & ~lower_mask) << 1) | (pair_index & lower_mask)
+    return addr0, addr0 | (1 << target_bit), True
+
+
 def test_rtl_q12_mul_formula_matches_python_model() -> None:
     cases = [
         ((1, 2, 3, 4), (5, 6, 7, 8)),
@@ -220,6 +229,28 @@ def test_rtl_hadamard_pair_matches_python_model() -> None:
         assert out1 == (left - right) * factor
 
 
+def test_rtl_hadamard_address_pair_matches_python_indexing() -> None:
+    assert [rtl_hadamard_address_pair(3, pair, 0) for pair in range(4)] == [
+        (0, 4, True),
+        (1, 5, True),
+        (2, 6, True),
+        (3, 7, True),
+    ]
+    assert [rtl_hadamard_address_pair(3, pair, 1) for pair in range(4)] == [
+        (0, 2, True),
+        (1, 3, True),
+        (4, 6, True),
+        (5, 7, True),
+    ]
+    assert [rtl_hadamard_address_pair(3, pair, 2) for pair in range(4)] == [
+        (0, 1, True),
+        (2, 3, True),
+        (4, 5, True),
+        (6, 7, True),
+    ]
+    assert rtl_hadamard_address_pair(3, 0, 3) == (0, 0, False)
+
+
 def test_rtl_files_contain_expected_modules_and_formulas() -> None:
     q12_mul = (ROOT / "rtl" / "q12_mul.sv").read_text(encoding="utf-8")
     complex_mul = (ROOT / "rtl" / "q12_complex_mul.sv").read_text(encoding="utf-8")
@@ -231,6 +262,7 @@ def test_rtl_files_contain_expected_modules_and_formulas() -> None:
     complex_scale_sqrt_half = (ROOT / "rtl" / "q12_complex_scale_sqrt_half.sv").read_text(encoding="utf-8")
     hadamard_pair = (ROOT / "rtl" / "hadamard_pair.sv").read_text(encoding="utf-8")
     hadamard_pair_packed = (ROOT / "rtl" / "hadamard_pair_packed.sv").read_text(encoding="utf-8")
+    hadamard_address_pair = (ROOT / "rtl" / "hadamard_address_pair.sv").read_text(encoding="utf-8")
 
     assert "module q12_mul" in q12_mul
     assert "A = (a * e) + 2 * (b * f) + 3 * (c * g) + 6 * (d * h);" in q12_mul
@@ -282,6 +314,12 @@ def test_rtl_files_contain_expected_modules_and_formulas() -> None:
     assert "ei0 = amp_in0[EXP_W-1:0];" in hadamard_pair_packed
     assert "amp_out0 = {ar_out0, br_out0, cr_out0, dr_out0, er_out0, ai_out0, bi_out0, ci_out0, di_out0, ei_out0};" in hadamard_pair_packed
     assert "hadamard_pair #(" in hadamard_pair_packed
+
+    assert "module hadamard_address_pair" in hadamard_address_pair
+    assert "target_bit = valid ? (ADDR_W - 1 - target_qubit) : 0;" in hadamard_address_pair
+    assert "lower_bits = pair_index & lower_mask;" in hadamard_address_pair
+    assert "upper_bits = (pair_index & ~lower_mask) << 1;" in hadamard_address_pair
+    assert "addr1 = addr0 | target_mask;" in hadamard_address_pair
 
 
 def test_rtl_opcode_package_matches_python_binary_encoder() -> None:
@@ -407,6 +445,7 @@ def test_rtl_testbenches_are_self_checking() -> None:
         ROOT / "rtl" / "tb" / "q12_scale_sqrt_half_tb.sv",
         ROOT / "rtl" / "tb" / "hadamard_pair_tb.sv",
         ROOT / "rtl" / "tb" / "hadamard_pair_packed_tb.sv",
+        ROOT / "rtl" / "tb" / "hadamard_address_pair_tb.sv",
         ROOT / "rtl" / "tb" / "instruction_decoder_tb.sv",
         ROOT / "rtl" / "tb" / "exactq12_sequencer_tb.sv",
     ]
@@ -448,6 +487,7 @@ def test_rtl_makefile_runs_optional_iverilog_sims() -> None:
     assert "q12_scale_sqrt_half_tb" in makefile
     assert "hadamard_pair_tb" in makefile
     assert "hadamard_pair_packed_tb" in makefile
+    assert "hadamard_address_pair_tb" in makefile
     assert "instruction_decoder_tb" in makefile
     assert "exactq12_sequencer_tb" in makefile
     assert "-g2012" in makefile
