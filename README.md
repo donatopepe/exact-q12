@@ -4,6 +4,9 @@
 
 **English:** experimental statevector quantum simulator using exact symbolic base-12 arithmetic.
 
+[![tests](https://github.com/donatopepe/exact-q12/actions/workflows/tests.yml/badge.svg)](https://github.com/donatopepe/exact-q12/actions/workflows/tests.yml)
+[![rtl-sim](https://github.com/donatopepe/exact-q12/actions/workflows/rtl-sim.yml/badge.svg)](https://github.com/donatopepe/exact-q12/actions/workflows/rtl-sim.yml)
+
 Repository: <https://github.com/donatopepe/exact-q12>
 
 License: MIT
@@ -493,6 +496,8 @@ make -C rtl sim
 ```
 
 Richiede `iverilog` e `vvp` installati localmente. Non è ancora richiesta dalla suite pytest o dalla CI.
+
+La simulazione RTL è però eseguita in un workflow GitHub Actions separato (`rtl-sim.yml`) che installa Icarus Verilog su Ubuntu e lancia `make -C rtl sim`.
 
 ### Batteria di test
 
@@ -1247,6 +1252,8 @@ make -C rtl sim
 ```
 
 This requires `iverilog` and `vvp` to be installed locally. It is not required by the pytest suite or CI yet.
+
+RTL simulation is also run by a separate GitHub Actions workflow (`rtl-sim.yml`) that installs Icarus Verilog on Ubuntu and runs `make -C rtl sim`.
 
 ### Test Battery
 

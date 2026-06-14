@@ -201,3 +201,12 @@ def test_rtl_makefile_runs_optional_iverilog_sims() -> None:
     assert "instruction_decoder_tb" in makefile
     assert "exactq12_sequencer_tb" in makefile
     assert "-g2012" in makefile
+
+
+def test_rtl_sim_workflow_runs_iverilog_make_target() -> None:
+    workflow = (ROOT / ".github" / "workflows" / "rtl-sim.yml").read_text(encoding="utf-8")
+
+    assert "name: rtl-sim" in workflow
+    assert "sudo apt-get install -y iverilog" in workflow
+    assert "make -C rtl sim" in workflow
+    assert "workflow_dispatch" in workflow
