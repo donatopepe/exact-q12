@@ -2,9 +2,9 @@ IVERILOG ?= iverilog
 VVP ?= vvp
 BUILD_DIR ?= build
 
-.PHONY: sim q12_mul_tb q12_add_tb q12_add_aligned_tb q12_complex_add_tb q12_complex_add_aligned_tb q12_scale_sqrt_half_tb hadamard_pair_tb hadamard_pair_packed_tb hadamard_address_pair_tb hadamard_pair_step_tb instruction_decoder_tb exactq12_sequencer_tb clean
+.PHONY: sim q12_mul_tb q12_add_tb q12_add_aligned_tb q12_complex_add_tb q12_complex_add_aligned_tb q12_scale_sqrt_half_tb hadamard_pair_tb hadamard_pair_packed_tb hadamard_address_pair_tb hadamard_pair_step_tb statevector_pair_mem_tb instruction_decoder_tb exactq12_sequencer_tb clean
 
-sim: q12_mul_tb q12_add_tb q12_add_aligned_tb q12_complex_add_tb q12_complex_add_aligned_tb q12_scale_sqrt_half_tb hadamard_pair_tb hadamard_pair_packed_tb hadamard_address_pair_tb hadamard_pair_step_tb instruction_decoder_tb exactq12_sequencer_tb
+sim: q12_mul_tb q12_add_tb q12_add_aligned_tb q12_complex_add_tb q12_complex_add_aligned_tb q12_scale_sqrt_half_tb hadamard_pair_tb hadamard_pair_packed_tb hadamard_address_pair_tb hadamard_pair_step_tb statevector_pair_mem_tb instruction_decoder_tb exactq12_sequencer_tb
 
 $(BUILD_DIR):
 	mkdir -p $(BUILD_DIR)
@@ -48,6 +48,10 @@ hadamard_address_pair_tb: $(BUILD_DIR)
 hadamard_pair_step_tb: $(BUILD_DIR)
 	$(IVERILOG) -g2012 -o $(BUILD_DIR)/hadamard_pair_step_tb.vvp hadamard_address_pair.sv q12_add_aligned.sv q12_complex_add_aligned.sv q12_scale_sqrt_half.sv q12_complex_scale_sqrt_half.sv hadamard_pair.sv hadamard_pair_packed.sv hadamard_pair_step.sv tb/hadamard_pair_step_tb.sv
 	$(VVP) $(BUILD_DIR)/hadamard_pair_step_tb.vvp
+
+statevector_pair_mem_tb: $(BUILD_DIR)
+	$(IVERILOG) -g2012 -o $(BUILD_DIR)/statevector_pair_mem_tb.vvp statevector_pair_mem.sv tb/statevector_pair_mem_tb.sv
+	$(VVP) $(BUILD_DIR)/statevector_pair_mem_tb.vvp
 
 instruction_decoder_tb: $(BUILD_DIR)
 	$(IVERILOG) -g2012 -o $(BUILD_DIR)/instruction_decoder_tb.vvp exactq12_pkg.sv instruction_decoder.sv tb/instruction_decoder_tb.sv

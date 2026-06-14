@@ -107,6 +107,7 @@ Implementato:
 - Wrapper RTL Hadamard per ampiezze `CQ12` impacchettate nel layout di memoria.
 - Generatore indirizzi RTL per coppie Hadamard coerente con la convenzione Python `q0` bit più significativo.
 - Step RTL combinatorio per applicare Hadamard a una coppia di payload memoria già letti.
+- Memoria RTL dual-read/dual-write orientata a coppie di ampiezze statevector.
 - Prime memorie RTL e sequencer fetch/decode/halt in `rtl/`.
 - Top-level RTL simulativo che collega ROM, sequencer e memoria statevector.
 - Testbench SystemVerilog opzionali eseguibili con Icarus Verilog.
@@ -477,6 +478,7 @@ La Fase 5 è iniziata con i primi blocchi combinatori in `rtl/`:
 - `rtl/instruction_decoder.sv`: decoder combinatorio per istruzioni `[opcode][arg0][arg1]`.
 - `rtl/program_rom.sv`: ROM generica per istruzioni a 24 bit caricata con `$readmemh`.
 - `rtl/statevector_mem.sv`: memoria sincrona per ampiezze `CQ12` impacchettate.
+- `rtl/statevector_pair_mem.sv`: memoria sincrona con due porte lettura/scrittura per coppie di ampiezze.
 - `rtl/exactq12_sequencer.sv`: scheletro fetch/decode/halt.
 - `rtl/exactq12_top.sv`: shell simulativa che collega ROM, sequencer e memoria statevector.
 - `rtl/q12_add.sv`: somma/sottrazione combinatoria per `Q12` con esponenti già allineati.
@@ -538,6 +540,7 @@ La suite pytest copre:
 - Layout RTL del wrapper Hadamard packed verificato contro il packing `CQ12`.
 - Formula indirizzi RTL per Hadamard confrontata con l'indicizzazione Python dello statevector.
 - Wiring statico dello step Hadamard RTL verificato dai test.
+- Interfaccia RTL della memoria statevector a coppie verificata dai test.
 - Wiring statico del top-level RTL verificato dai test.
 - Presenza di testbench SystemVerilog auto-verificanti e Makefile RTL.
 - Conservazione esatta della normalizzazione dopo sequenze di gate supportati.
@@ -693,6 +696,7 @@ exact-q12/
 │   ├── q12_den_reduce.sv
 │   ├── q12_mul.sv
 │   ├── q12_scale_sqrt_half.sv
+│   ├── statevector_pair_mem.sv
 │   ├── statevector_mem.sv
 │   └── tb/
 ├── PROJECT_CONTEXT_EXACT_Q12.md
@@ -731,6 +735,7 @@ Fase 5, iniziata:
 
 - Moduli SystemVerilog combinatori `q12_add`, `q12_add_aligned`, `q12_complex_add`, `q12_complex_add_aligned`, `q12_scale_sqrt_half`, `q12_complex_scale_sqrt_half`, `hadamard_address_pair`, `hadamard_pair`, `hadamard_pair_packed`, `hadamard_pair_step`, `q12_mul`, `q12_complex_mul`, `q12_den_reduce` e decoder istruzioni.
 - Memorie RTL iniziali e sequencer fetch/decode/halt.
+- Memoria RTL dual-port per coppie di ampiezze statevector.
 - Top-level RTL simulativo non board-specific.
 - Testbench SystemVerilog opzionali per Icarus Verilog.
 - Futuro: esecuzione gate sul datapath statevector, UART debug, top-level Tang Nano 20K.
@@ -894,6 +899,7 @@ Implemented:
 - RTL Hadamard wrapper for packed `CQ12` amplitudes using the memory layout.
 - RTL Hadamard pair address generator matching the Python `q0` most-significant-bit convention.
 - Combinational RTL step for applying Hadamard to one already-read memory payload pair.
+- Dual-read/dual-write RTL memory oriented around statevector amplitude pairs.
 - First RTL memories and fetch/decode/halt sequencer in `rtl/`.
 - Simulation-oriented RTL top-level wiring ROM, sequencer, and statevector memory.
 - Optional SystemVerilog testbenches runnable with Icarus Verilog.
@@ -1264,6 +1270,7 @@ Phase 5 has started with the first combinational blocks in `rtl/`:
 - `rtl/instruction_decoder.sv`: combinational decoder for `[opcode][arg0][arg1]` instructions.
 - `rtl/program_rom.sv`: generic 24-bit instruction ROM loaded with `$readmemh`.
 - `rtl/statevector_mem.sv`: synchronous memory for packed `CQ12` amplitudes.
+- `rtl/statevector_pair_mem.sv`: synchronous memory with two read/write ports for amplitude pairs.
 - `rtl/exactq12_sequencer.sv`: fetch/decode/halt skeleton.
 - `rtl/exactq12_top.sv`: simulation shell wiring ROM, sequencer, and statevector memory.
 - `rtl/q12_add.sv`: combinational add/subtract for `Q12` values with already aligned exponents.
@@ -1324,6 +1331,7 @@ The pytest suite covers:
 - Packed Hadamard RTL wrapper layout verified against `CQ12` packing.
 - RTL Hadamard address formula compared against Python statevector indexing.
 - Static RTL Hadamard step wiring verified by tests.
+- Pair-oriented RTL statevector memory interface verified by tests.
 - Static RTL top-level wiring verified by tests.
 - Presence of self-checking SystemVerilog testbenches and RTL Makefile.
 - Exact normalization preservation after supported gate sequences.
@@ -1479,6 +1487,7 @@ exact-q12/
 │   ├── q12_den_reduce.sv
 │   ├── q12_mul.sv
 │   ├── q12_scale_sqrt_half.sv
+│   ├── statevector_pair_mem.sv
 │   ├── statevector_mem.sv
 │   └── tb/
 ├── PROJECT_CONTEXT_EXACT_Q12.md
@@ -1517,6 +1526,7 @@ Phase 5, started:
 
 - Combinational SystemVerilog modules `q12_add`, `q12_add_aligned`, `q12_complex_add`, `q12_complex_add_aligned`, `q12_scale_sqrt_half`, `q12_complex_scale_sqrt_half`, `hadamard_address_pair`, `hadamard_pair`, `hadamard_pair_packed`, `hadamard_pair_step`, `q12_mul`, `q12_complex_mul`, `q12_den_reduce`, and instruction decoder.
 - Initial RTL memories and fetch/decode/halt sequencer.
+- Dual-port RTL memory for statevector amplitude pairs.
 - Non-board-specific simulation RTL top-level.
 - Optional SystemVerilog testbenches for Icarus Verilog.
 - Future: gate execution over the statevector datapath, UART debug, Tang Nano 20K top-level.

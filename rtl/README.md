@@ -8,6 +8,7 @@ Current modules:
 - `instruction_decoder.sv`: combinational decoder for 24-bit `[opcode][arg0][arg1]` instructions.
 - `program_rom.sv`: generic 24-bit instruction ROM loaded with `$readmemh`.
 - `statevector_mem.sv`: synchronous memory for packed `CQ12` amplitudes.
+- `statevector_pair_mem.sv`: synchronous two-read/two-write memory for amplitude pairs.
 - `exactq12_sequencer.sv`: first fetch/decode/halt sequencer skeleton.
 - `exactq12_top.sv`: simulation-oriented shell wiring ROM, sequencer, and state memory.
 - `q12_add.sv`: combinational add/subtract for `Q12` values with already aligned exponents.

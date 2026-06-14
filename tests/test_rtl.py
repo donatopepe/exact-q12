@@ -394,6 +394,7 @@ PROB
 def test_rtl_program_rom_and_statevector_memory_interfaces() -> None:
     program_rom = (ROOT / "rtl" / "program_rom.sv").read_text(encoding="utf-8")
     statevector_mem = (ROOT / "rtl" / "statevector_mem.sv").read_text(encoding="utf-8")
+    statevector_pair_mem = (ROOT / "rtl" / "statevector_pair_mem.sv").read_text(encoding="utf-8")
 
     assert "module program_rom" in program_rom
     assert "parameter string INIT_FILE" in program_rom
@@ -404,6 +405,14 @@ def test_rtl_program_rom_and_statevector_memory_interfaces() -> None:
     assert "parameter int AMP_W = (8 * COEFF_W) + (2 * EXP_W)" in statevector_mem
     assert "always_ff @(posedge clk)" in statevector_mem
     assert "mem[addr] <= wdata;" in statevector_mem
+
+    assert "module statevector_pair_mem" in statevector_pair_mem
+    assert "output logic [AMP_W-1:0]" in statevector_pair_mem
+    assert "mem[addr0] <= wdata0;" in statevector_pair_mem
+    assert "mem[addr1] <= wdata1;" in statevector_pair_mem
+    assert statevector_pair_mem.index("mem[addr0] <= wdata0;") < statevector_pair_mem.index("mem[addr1] <= wdata1;")
+    assert "rdata0 <= mem[addr0];" in statevector_pair_mem
+    assert "rdata1 <= mem[addr1];" in statevector_pair_mem
 
 
 def test_rtl_sequencer_decodes_and_halts_on_dump_or_invalid() -> None:
@@ -455,6 +464,7 @@ def test_rtl_testbenches_are_self_checking() -> None:
         ROOT / "rtl" / "tb" / "hadamard_pair_packed_tb.sv",
         ROOT / "rtl" / "tb" / "hadamard_address_pair_tb.sv",
         ROOT / "rtl" / "tb" / "hadamard_pair_step_tb.sv",
+        ROOT / "rtl" / "tb" / "statevector_pair_mem_tb.sv",
         ROOT / "rtl" / "tb" / "instruction_decoder_tb.sv",
         ROOT / "rtl" / "tb" / "exactq12_sequencer_tb.sv",
     ]
@@ -498,6 +508,7 @@ def test_rtl_makefile_runs_optional_iverilog_sims() -> None:
     assert "hadamard_pair_packed_tb" in makefile
     assert "hadamard_address_pair_tb" in makefile
     assert "hadamard_pair_step_tb" in makefile
+    assert "statevector_pair_mem_tb" in makefile
     assert "instruction_decoder_tb" in makefile
     assert "exactq12_sequencer_tb" in makefile
     assert "-g2012" in makefile
