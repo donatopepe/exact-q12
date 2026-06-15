@@ -101,6 +101,12 @@ def rtl_hadamard_address_pair(num_qubits: int, pair_index: int, target_qubit: in
     return addr0, addr0 | (1 << target_bit), True
 
 
+def rtl_hadamard_pair_traversal(num_qubits: int, addr_width: int) -> list[int]:
+    if num_qubits <= 0 or num_qubits > addr_width:
+        return []
+    return list(range(1 << (num_qubits - 1)))
+
+
 def test_rtl_q12_mul_formula_matches_python_model() -> None:
     cases = [
         ((1, 2, 3, 4), (5, 6, 7, 8)),
@@ -251,6 +257,13 @@ def test_rtl_hadamard_address_pair_matches_python_indexing() -> None:
     assert rtl_hadamard_address_pair(3, 0, 3) == (0, 0, False)
 
 
+def test_rtl_hadamard_pair_traversal_counts_pairs() -> None:
+    assert rtl_hadamard_pair_traversal(1, 3) == [0]
+    assert rtl_hadamard_pair_traversal(3, 3) == [0, 1, 2, 3]
+    assert rtl_hadamard_pair_traversal(0, 3) == []
+    assert rtl_hadamard_pair_traversal(4, 3) == []
+
+
 def test_rtl_files_contain_expected_modules_and_formulas() -> None:
     q12_mul = (ROOT / "rtl" / "q12_mul.sv").read_text(encoding="utf-8")
     complex_mul = (ROOT / "rtl" / "q12_complex_mul.sv").read_text(encoding="utf-8")
@@ -266,6 +279,7 @@ def test_rtl_files_contain_expected_modules_and_formulas() -> None:
     hadamard_pair_step = (ROOT / "rtl" / "hadamard_pair_step.sv").read_text(encoding="utf-8")
     hadamard_pair_repack = (ROOT / "rtl" / "hadamard_pair_repack.sv").read_text(encoding="utf-8")
     hadamard_pair_writeback_step = (ROOT / "rtl" / "hadamard_pair_writeback_step.sv").read_text(encoding="utf-8")
+    hadamard_pair_traversal = (ROOT / "rtl" / "hadamard_pair_traversal.sv").read_text(encoding="utf-8")
 
     assert "module q12_mul" in q12_mul
     assert "A = (a * e) + 2 * (b * f) + 3 * (c * g) + 6 * (d * h);" in q12_mul
@@ -345,6 +359,14 @@ def test_rtl_files_contain_expected_modules_and_formulas() -> None:
     assert ".amp_wdata0(wide_wdata0)" in hadamard_pair_writeback_step
     assert ".amp_out0(amp_wdata0)" in hadamard_pair_writeback_step
     assert "valid = step_valid && repack_valid;" in hadamard_pair_writeback_step
+
+    assert "module hadamard_pair_traversal" in hadamard_pair_traversal
+    assert "ST_IDLE" in hadamard_pair_traversal
+    assert "ST_RUN" in hadamard_pair_traversal
+    assert "ST_DONE" in hadamard_pair_traversal
+    assert "last_pair = config_valid" in hadamard_pair_traversal
+    assert "pair_valid = (state == ST_RUN);" in hadamard_pair_traversal
+    assert "pair_index <= pair_index + 1'b1;" in hadamard_pair_traversal
 
 
 def test_rtl_opcode_package_matches_python_binary_encoder() -> None:
@@ -483,6 +505,7 @@ def test_rtl_testbenches_are_self_checking() -> None:
         ROOT / "rtl" / "tb" / "hadamard_pair_step_tb.sv",
         ROOT / "rtl" / "tb" / "hadamard_pair_repack_tb.sv",
         ROOT / "rtl" / "tb" / "hadamard_pair_writeback_step_tb.sv",
+        ROOT / "rtl" / "tb" / "hadamard_pair_traversal_tb.sv",
         ROOT / "rtl" / "tb" / "statevector_pair_mem_tb.sv",
         ROOT / "rtl" / "tb" / "instruction_decoder_tb.sv",
         ROOT / "rtl" / "tb" / "exactq12_sequencer_tb.sv",
@@ -529,6 +552,7 @@ def test_rtl_makefile_runs_optional_iverilog_sims() -> None:
     assert "hadamard_pair_step_tb" in makefile
     assert "hadamard_pair_repack_tb" in makefile
     assert "hadamard_pair_writeback_step_tb" in makefile
+    assert "hadamard_pair_traversal_tb" in makefile
     assert "statevector_pair_mem_tb" in makefile
     assert "instruction_decoder_tb" in makefile
     assert "exactq12_sequencer_tb" in makefile

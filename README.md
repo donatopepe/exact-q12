@@ -109,6 +109,7 @@ Implementato:
 - Step RTL combinatorio per applicare Hadamard a una coppia di payload memoria già letti.
 - Repack RTL degli output Hadamard wide verso payload memoria con controllo overflow signed.
 - Step RTL Hadamard completo di writeback nel formato memoria standard.
+- Controller RTL di traversal per emettere tutti i `pair_index` di un gate Hadamard.
 - Memoria RTL dual-read/dual-write orientata a coppie di ampiezze statevector.
 - Prime memorie RTL e sequencer fetch/decode/halt in `rtl/`.
 - Top-level RTL simulativo che collega ROM, sequencer e memoria statevector.
@@ -495,6 +496,7 @@ La Fase 5 è iniziata con i primi blocchi combinatori in `rtl/`:
 - `rtl/hadamard_pair_step.sv`: combina indirizzi, payload letti e risultati Hadamard per una coppia.
 - `rtl/hadamard_pair_repack.sv`: repack degli output Hadamard wide verso il formato memoria standard se i coefficienti rientrano.
 - `rtl/hadamard_pair_writeback_step.sv`: step Hadamard con indirizzi e payload writeback già repackati.
+- `rtl/hadamard_pair_traversal.sv`: FSM che emette la sequenza `pair_index` per attraversare uno statevector.
 - `rtl/bell.memh`: programma Bell in formato ROM hex.
 - `rtl/tb/`: testbench SystemVerilog auto-verificanti opzionali.
 - `rtl/Makefile`: target opzionali per simulazione locale con Icarus Verilog.
@@ -546,6 +548,7 @@ La suite pytest copre:
 - Wiring statico dello step Hadamard RTL verificato dai test.
 - Repack RTL Hadamard wide-to-memory verificato dai test statici e testbench.
 - Wiring statico dello step Hadamard writeback verificato dai test.
+- Sequenza di traversal RTL Hadamard verificata contro la formula `2^(num_qubits-1)`.
 - Interfaccia RTL della memoria statevector a coppie verificata dai test.
 - Wiring statico del top-level RTL verificato dai test.
 - Presenza di testbench SystemVerilog auto-verificanti e Makefile RTL.
@@ -692,6 +695,7 @@ exact-q12/
 │   ├── hadamard_pair_packed.sv
 │   ├── hadamard_pair_repack.sv
 │   ├── hadamard_pair_step.sv
+│   ├── hadamard_pair_traversal.sv
 │   ├── hadamard_pair_writeback_step.sv
 │   ├── instruction_decoder.sv
 │   ├── program_rom.sv
@@ -741,7 +745,7 @@ Fase 4, iniziata:
 
 Fase 5, iniziata:
 
-- Moduli SystemVerilog combinatori `q12_add`, `q12_add_aligned`, `q12_complex_add`, `q12_complex_add_aligned`, `q12_scale_sqrt_half`, `q12_complex_scale_sqrt_half`, `hadamard_address_pair`, `hadamard_pair`, `hadamard_pair_packed`, `hadamard_pair_repack`, `hadamard_pair_step`, `hadamard_pair_writeback_step`, `q12_mul`, `q12_complex_mul`, `q12_den_reduce` e decoder istruzioni.
+- Moduli SystemVerilog combinatori/FSM `q12_add`, `q12_add_aligned`, `q12_complex_add`, `q12_complex_add_aligned`, `q12_scale_sqrt_half`, `q12_complex_scale_sqrt_half`, `hadamard_address_pair`, `hadamard_pair`, `hadamard_pair_packed`, `hadamard_pair_repack`, `hadamard_pair_step`, `hadamard_pair_traversal`, `hadamard_pair_writeback_step`, `q12_mul`, `q12_complex_mul`, `q12_den_reduce` e decoder istruzioni.
 - Memorie RTL iniziali e sequencer fetch/decode/halt.
 - Memoria RTL dual-port per coppie di ampiezze statevector.
 - Top-level RTL simulativo non board-specific.
@@ -909,6 +913,7 @@ Implemented:
 - Combinational RTL step for applying Hadamard to one already-read memory payload pair.
 - RTL repack of wide Hadamard outputs into memory payloads with signed overflow checks.
 - RTL Hadamard step with writeback payloads in the standard memory format.
+- RTL traversal controller for emitting every `pair_index` in a Hadamard gate.
 - Dual-read/dual-write RTL memory oriented around statevector amplitude pairs.
 - First RTL memories and fetch/decode/halt sequencer in `rtl/`.
 - Simulation-oriented RTL top-level wiring ROM, sequencer, and statevector memory.
@@ -1295,6 +1300,7 @@ Phase 5 has started with the first combinational blocks in `rtl/`:
 - `rtl/hadamard_pair_step.sv`: combines addresses, read payloads, and Hadamard results for one pair.
 - `rtl/hadamard_pair_repack.sv`: repacks wide Hadamard outputs into the standard memory format when coefficients fit.
 - `rtl/hadamard_pair_writeback_step.sv`: Hadamard step with addresses and already-repacked writeback payloads.
+- `rtl/hadamard_pair_traversal.sv`: FSM that emits the `pair_index` sequence for statevector traversal.
 - `rtl/bell.memh`: Bell program in ROM hex format.
 - `rtl/tb/`: optional self-checking SystemVerilog testbenches.
 - `rtl/Makefile`: optional local Icarus Verilog simulation targets.
@@ -1345,6 +1351,7 @@ The pytest suite covers:
 - Static RTL Hadamard step wiring verified by tests.
 - RTL Hadamard wide-to-memory repack verified by static tests and testbench.
 - Static RTL Hadamard writeback step wiring verified by tests.
+- RTL Hadamard traversal sequence verified against the `2^(num_qubits-1)` formula.
 - Pair-oriented RTL statevector memory interface verified by tests.
 - Static RTL top-level wiring verified by tests.
 - Presence of self-checking SystemVerilog testbenches and RTL Makefile.
@@ -1491,6 +1498,7 @@ exact-q12/
 │   ├── hadamard_pair_packed.sv
 │   ├── hadamard_pair_repack.sv
 │   ├── hadamard_pair_step.sv
+│   ├── hadamard_pair_traversal.sv
 │   ├── hadamard_pair_writeback_step.sv
 │   ├── instruction_decoder.sv
 │   ├── program_rom.sv
@@ -1540,7 +1548,7 @@ Phase 4, started:
 
 Phase 5, started:
 
-- Combinational SystemVerilog modules `q12_add`, `q12_add_aligned`, `q12_complex_add`, `q12_complex_add_aligned`, `q12_scale_sqrt_half`, `q12_complex_scale_sqrt_half`, `hadamard_address_pair`, `hadamard_pair`, `hadamard_pair_packed`, `hadamard_pair_repack`, `hadamard_pair_step`, `hadamard_pair_writeback_step`, `q12_mul`, `q12_complex_mul`, `q12_den_reduce`, and instruction decoder.
+- Combinational SystemVerilog modules/FSMs `q12_add`, `q12_add_aligned`, `q12_complex_add`, `q12_complex_add_aligned`, `q12_scale_sqrt_half`, `q12_complex_scale_sqrt_half`, `hadamard_address_pair`, `hadamard_pair`, `hadamard_pair_packed`, `hadamard_pair_repack`, `hadamard_pair_step`, `hadamard_pair_traversal`, `hadamard_pair_writeback_step`, `q12_mul`, `q12_complex_mul`, `q12_den_reduce`, and instruction decoder.
 - Initial RTL memories and fetch/decode/halt sequencer.
 - Dual-port RTL memory for statevector amplitude pairs.
 - Non-board-specific simulation RTL top-level.
