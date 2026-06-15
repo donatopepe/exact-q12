@@ -367,6 +367,7 @@ def test_rtl_files_contain_expected_modules_and_formulas() -> None:
     assert "last_pair = config_valid" in hadamard_pair_traversal
     assert "pair_valid = (state == ST_RUN);" in hadamard_pair_traversal
     assert "pair_index <= pair_index + 1'b1;" in hadamard_pair_traversal
+    assert "pair_index <= '0;" in hadamard_pair_traversal
 
 
 def test_rtl_opcode_package_matches_python_binary_encoder() -> None:

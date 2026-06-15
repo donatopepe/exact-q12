@@ -55,6 +55,7 @@ module hadamard_pair_traversal #(
                 ST_DONE: begin
                     if (!start) begin
                         state <= ST_IDLE;
+                        pair_index <= '0;
                     end
                 end
 
