@@ -9,6 +9,13 @@
 
 Repository: <https://github.com/donatopepe/exact-q12>
 
+Release: [v0.1.0](https://github.com/donatopepe/exact-q12/releases/tag/v0.1.0) provides a verified Python wheel and `SHA256SUMS.txt`.
+
+```bash
+python -m pip install exactq12-0.1.0-py3-none-any.whl
+exactq12 --help
+```
+
 License: MIT
 
 ---
